@@ -6,3 +6,83 @@ main{padding:27px;min-width:0}.top{display:flex;justify-content:space-between;al
 @media(max-width:980px){.shell{grid-template-columns:1fr}.sidebar{position:fixed;left:-270px;width:250px;z-index:60;transition:.2s}.sidebar.open{left:0}.menu{display:inline-block}.hero,.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}main{padding:18px}}
 @media(max-width:580px){main{padding:12px}.top{align-items:center}.top h2{font-size:26px}.top-actions #refreshBtn{display:none}.kpis,.count-grid,.form,.settings-grid{grid-template-columns:1fr 1fr}.hero .photo{height:300px}.count{padding:20px}.time{padding:14px 5px}.time strong{font-size:23px}.toolbar>*{width:100%}.summary-strip{display:grid;grid-template-columns:1fr 1fr}.alert-item{flex-direction:column}.modalbox{padding:17px}.form .full{grid-column:1/-1}}
 @media print{.sidebar,.top-actions,.menu,.toolbar,.danger,.secondary,.primary{display:none!important}.shell{display:block}main{padding:0}.page{display:none!important}.page.active{display:block!important}.card{box-shadow:none}.table-wrap{overflow:visible}table{min-width:0;font-size:10px}}
+
+/* NAHVIO PREMIUM */
+:root{
+  --pink:#f0527d;
+  --pink-soft:#fff0f4;
+  --yellow:#f3b51b;
+  --yellow-soft:#fff8df;
+  --blue:#2e82e6;
+  --blue-soft:#edf6ff;
+  --purple:#8c59df;
+  --purple-soft:#f4efff;
+  --teal:#22a6a4;
+}
+body{background:radial-gradient(circle at 70% 0,#fff7f5 0,#f7f1e6 35%,#f6f1e7 100%)}
+.premium-dashboard{animation:fadeUp .45s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.premium-hero{display:grid;grid-template-columns:42% 58%;gap:18px}
+.premium-photo{height:345px;border:1px solid #e8d9c8;box-shadow:0 16px 35px rgba(55,45,26,.16)}
+.premium-photo:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,transparent 35%,rgba(16,23,19,.12) 48%,rgba(28,18,20,.92) 100%)}
+.premium-photo-copy{bottom:18px}
+.script-label{font:32px "Segoe Script","Brush Script MT",cursive;color:#fff5dc;text-shadow:0 2px 10px #0008;display:block;margin-bottom:2px}
+.premium-photo-copy h3{font-size:38px;margin:0 0 8px}
+.premium-photo-copy p{font-size:15px;line-height:1.4;background:linear-gradient(90deg,rgba(171,42,64,.88),rgba(198,65,78,.73));padding:10px 13px;border-radius:10px;border:1px solid #ffffff1f}
+.photo-decor{position:absolute;z-index:3;color:#ffbf3b;font-size:38px;right:22px;top:145px;transform:rotate(-12deg)}
+.premium-count{min-height:345px;padding:26px 28px;background:
+  radial-gradient(circle at 95% 10%,rgba(255,194,204,.35),transparent 27%),
+  radial-gradient(circle at 5% 95%,rgba(255,210,171,.35),transparent 25%),
+  linear-gradient(135deg,#fffdfb,#fff8f8);
+  border-color:#f0ddd9;position:relative;overflow:hidden
+}
+.premium-count:before,.premium-count:after{content:"♡";position:absolute;color:#f5a6b9;font-size:24px;opacity:.65}
+.premium-count:before{top:15px;left:80px}.premium-count:after{bottom:12px;right:35px}
+.count-main{display:grid;grid-template-columns:38% 62%;align-items:center;gap:18px}
+.dark-eye{color:#31443e}
+.giant-days{display:flex;align-items:end;line-height:.85;margin:8px 0 13px}
+.giant-days strong{font:116px Georgia,serif;background:linear-gradient(145deg,#ff7f45,#e7428d,#8d5de0);-webkit-background-clip:text;color:transparent;letter-spacing:-8px}
+.giant-days em{font:45px "Segoe Script","Brush Script MT",cursive;color:#d69b2c;margin:0 0 12px -4px;font-weight:400}
+.premium-count h3{font:700 14px Inter,Arial,sans-serif;letter-spacing:.18em;color:#263a34;margin:0 0 19px}
+.date-chip{display:inline-flex;align-items:center;gap:8px;color:var(--pink);border:1px solid #ffd1dc;background:#fff8fa;padding:10px 12px;border-radius:10px;box-shadow:0 8px 20px #f14d7a12;font-weight:700;font-size:13px}
+.premium-count-grid{gap:12px}
+.premium-count-grid .time{background:#fff;border:1px solid #eee2db;box-shadow:0 8px 18px #56412a12;padding:15px 7px}
+.premium-count-grid .time-icon{font-size:22px;font-weight:800;margin-bottom:3px}
+.premium-count-grid .pink .time-icon{color:var(--pink)}.premium-count-grid .yellow .time-icon{color:var(--yellow)}.premium-count-grid .green .time-icon{color:#18a449}.premium-count-grid .blue .time-icon{color:var(--blue)}
+.premium-count-grid .time strong{font:41px Georgia,serif;color:#102f28}
+.journey{margin-top:22px}
+.journey-head{display:flex;justify-content:space-between;color:#64726d;font-size:11px;font-weight:800;text-transform:uppercase}
+.journey-bar{height:15px;margin:8px 0 12px;background:#e5e0dc;border-radius:99px;position:relative}
+.journey-bar span{height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,#ff9e46,#f34f83,#9860e7);transition:.5s}
+.journey-bar i{position:absolute;top:-5px;color:#ff5c88;font-style:normal;font-size:21px;transition:.5s}
+.journey p{text-align:center;font:18px "Segoe Script","Brush Script MT",cursive;color:#4d615a;margin:0}
+.premium-kpis{gap:12px;margin:16px 0}
+.premium-kpi{display:flex;align-items:center;gap:14px;padding:15px;border-width:1px}
+.premium-kpi .kpi-icon{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:30px;flex:none}
+.premium-kpi span{font-size:12px;font-weight:800;text-transform:uppercase}.premium-kpi strong{margin:3px 0 2px}
+.green-card{border-color:#ccebdc}.green-card .kpi-icon{background:#dff6eb}.green-card span{color:#17824f}
+.yellow-card{border-color:#f8e1a6}.yellow-card .kpi-icon{background:#fff3ce}.yellow-card span{color:#e18b00}.yellow-card strong{color:#de8b00}
+.blue-card{border-color:#cbdff6}.blue-card .kpi-icon{background:#e7f1ff}.blue-card span{color:#2865b4}.blue-card strong{color:#164f96}
+.purple-card{border-color:#e3d5fa}.purple-card .kpi-icon{background:#f0e7ff;color:#7e51d6}.purple-card span{color:#7950c9}.purple-card strong{color:#6842b5}
+.premium-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.premium-panel,.mini-panel{padding:14px;border-radius:15px}
+.panel-title{display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;font-size:12px;font-weight:900;color:#157c56;margin-bottom:12px}
+.panel-title small{color:#66766f;text-transform:none;font-weight:500}
+.donut-row,.finance-mini{display:flex;gap:16px;align-items:center}
+.donut{width:122px;height:122px;border-radius:50%;display:grid;place-items:center;position:relative;flex:none}
+.donut:after{content:"";position:absolute;width:80px;height:80px;background:#fff;border-radius:50%}
+.donut>div{position:relative;z-index:2;text-align:center}
+.donut strong{display:block;font-size:24px;color:#183b31}.donut small{font-size:10px;color:#56655f;line-height:1.2}
+.legend-list{display:grid;gap:9px;flex:1}
+.legend-list>div{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;font-size:11px}
+.legend-list strong{font-size:11px;color:#59665f}
+.legend-list small{font-size:10px;color:#66766f}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}.green-dot{background:#16a064}.yellow-dot{background:#f3b51b}.pink-dot{background:#f04e78}.violet-dot{background:#8c59df}
+.stats-list{display:grid;gap:0}.stats-list>div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eee8df;font-size:12px}.stats-list>div:last-child{border:0}.mini-ico{display:inline-grid;width:20px;height:20px;place-items:center;border-radius:6px;margin-right:7px;font-style:normal}.mini-ico.teal{background:#d9f4f3;color:#149693}.mini-ico.orange{background:#fff0df;color:#ec8c28}.mini-ico.purple,.mini-ico.violet{background:#efe8ff;color:#8658d7}.mini-ico.green{background:#e2f5e9;color:#258c50}
+.premium-bottom-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}.pink-title{color:#f0527d}.blue-title{color:#3183df}.green-title{color:#188453}.purple-title{color:#8b62d4}
+.compact-list{display:grid;gap:7px}.compact-list>div{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:11px;border-bottom:1px solid #eee8df;padding:7px 0}.compact-list>div:last-child{border:0}.compact-list>div:has(small){grid-template-columns:1fr auto auto}.compact-list strong{color:#26645b}.compact-list small{color:#6e7b75}.empty-note{font-size:11px;color:#77847d}
+.finance-donut{width:78px;height:78px;border-radius:50%;position:relative;flex:none}.finance-donut:after{content:"";position:absolute;inset:22px;background:#fff;border-radius:50%}
+.premium-alerts{margin-top:12px}
+@media(max-width:1250px){.premium-info-grid,.premium-bottom-grid{grid-template-columns:1fr 1fr}.premium-hero{grid-template-columns:38% 62%}.giant-days strong{font-size:85px}.count-main{grid-template-columns:34% 66%}}
+@media(max-width:980px){.premium-hero{grid-template-columns:1fr}.premium-photo{height:380px}.count-main{grid-template-columns:1fr}.giant-days strong{font-size:100px}}
+@media(max-width:680px){.premium-info-grid,.premium-bottom-grid{grid-template-columns:1fr}.premium-kpis{grid-template-columns:1fr}.premium-photo{height:330px}.giant-days strong{font-size:82px}.giant-days em{font-size:34px}.premium-count-grid{grid-template-columns:1fr 1fr}.premium-photo-copy h3{font-size:31px}}

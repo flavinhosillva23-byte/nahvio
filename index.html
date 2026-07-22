@@ -63,60 +63,109 @@
         </div>
       </header>
 
-      <section id="dashboard" class="page active">
-        <div class="hero">
-          <div class="photo">
+
+      <section id="dashboard" class="page active premium-dashboard">
+        <div class="premium-hero">
+          <div class="photo premium-photo">
             <img src="assets/casal.jpg" alt="Flávio e Nathália">
-            <div class="photo-copy">
-              <span class="eyebrow light">Nosso grande dia</span>
+            <div class="photo-decor decor-heart">♡</div>
+            <div class="photo-copy premium-photo-copy">
+              <span class="script-label">Nosso grande dia!</span>
               <h3 id="heroCouple"></h3>
-              <p id="heroSubtitle"></p>
+              <p>Tiago 1:17 • “Toda boa dádiva e todo presente perfeito vem de cima”</p>
             </div>
           </div>
-          <div class="card count">
-            <span class="eyebrow">Contagem regressiva</span>
-            <h3 id="weddingLabel"></h3>
-            <div class="count-grid">
-              <div class="time"><strong id="days">0</strong><span>Dias</span></div>
-              <div class="time"><strong id="hours">0</strong><span>Horas</span></div>
-              <div class="time"><strong id="minutes">0</strong><span>Minutos</span></div>
-              <div class="time"><strong id="seconds">0</strong><span>Segundos</span></div>
+
+          <div class="count premium-count">
+            <div class="count-main">
+              <div>
+                <span class="eyebrow dark-eye">♡ Faltam ♡</span>
+                <div class="giant-days"><strong id="daysBig">0</strong><em>dias</em></div>
+                <h3>PARA O NOSSO SIM!</h3>
+                <div class="date-chip">▣ <span id="weddingLabel"></span></div>
+              </div>
+
+              <div class="count-grid premium-count-grid">
+                <div class="time pink"><span class="time-icon">▣</span><strong id="days">0</strong><span>Dias</span></div>
+                <div class="time yellow"><span class="time-icon">◷</span><strong id="hours">0</strong><span>Horas</span></div>
+                <div class="time green"><span class="time-icon">⏱</span><strong id="minutes">0</strong><span>Minutos</span></div>
+                <div class="time blue"><span class="time-icon">ϟ</span><strong id="seconds">0</strong><span>Segundos</span></div>
+              </div>
+            </div>
+
+            <div class="journey">
+              <div class="journey-head"><span>Jornada até o casamento</span><strong id="journeyPercent">0% concluído</strong></div>
+              <div class="journey-bar"><span id="journeyBar"></span><i>♥</i></div>
+              <p>Cada dia nos aproxima do momento mais especial das nossas vidas. ♡</p>
             </div>
           </div>
         </div>
 
-        <div class="kpis">
-          <article class="card kpi"><span>Pessoas cadastradas</span><strong id="kPeople">0</strong><small id="kConfirmed"></small></article>
-          <article class="card kpi"><span>Contagem para o limite</span><strong id="kWeight">0</strong><small id="kLimit"></small></article>
-          <article class="card kpi"><span>Assentos necessários</span><strong id="kSeats">0</strong><small id="kNoTable"></small></article>
-          <article class="card kpi"><span>Saldo previsto</span><strong id="kBalance">R$ 0,00</strong><small id="kPaid"></small></article>
+        <div class="kpis premium-kpis">
+          <article class="card kpi premium-kpi green-card"><div class="kpi-icon">👥</div><div><span>Pessoas cadastradas</span><strong id="kPeople">0</strong><small id="kConfirmed"></small></div></article>
+          <article class="card kpi premium-kpi yellow-card"><div class="kpi-icon">🧑‍🤝‍🧑</div><div><span>Contagem para o limite</span><strong id="kWeight">0</strong><small id="kLimit"></small></div></article>
+          <article class="card kpi premium-kpi blue-card"><div class="kpi-icon">🪑</div><div><span>Assentos necessários</span><strong id="kSeats">0</strong><small id="kNoTable"></small></div></article>
+          <article class="card kpi premium-kpi purple-card"><div class="kpi-icon">＄</div><div><span>Saldo previsto</span><strong id="kBalance">R$ 0,00</strong><small id="kPaid"></small></div></article>
         </div>
 
-        <div class="grid2">
-          <article class="card">
-            <div class="section-head"><div><span class="eyebrow">Confirmações</span><h3 id="confirmTitle">0%</h3></div><span id="confirmChip" class="chip">0 famílias</span></div>
-            <div class="bar"><span id="confirmBar"></span></div>
-            <p id="confirmDetails" class="muted"></p>
+        <div class="premium-info-grid">
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Confirmações</span><small id="confirmChip">0 famílias</small></div>
+            <div class="donut-row">
+              <div id="confirmDonut" class="donut"><div><strong id="confirmDonutValue">0%</strong><small>das famílias<br>confirmadas</small></div></div>
+              <div id="confirmLegend" class="legend-list"></div>
+            </div>
+            <div class="hidden"><h3 id="confirmTitle"></h3><div class="bar"><span id="confirmBar"></span></div><p id="confirmDetails"></p></div>
           </article>
-          <article class="card">
-            <span class="eyebrow">Composição da lista</span>
-            <h3>Categorias</h3>
-            <p id="categorySummary" class="muted"></p>
+
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Composição da lista</span></div>
+            <div id="categoryBreakdown" class="stats-list"></div>
+            <p id="categorySummary" class="hidden"></p>
           </article>
-          <article class="card">
-            <span class="eyebrow">Organização</span>
-            <h3>Mesas</h3>
-            <p id="tableSummary" class="muted"></p>
+
+          <article class="card premium-panel">
+            <div class="panel-title"><span>♟ Organização</span></div>
+            <div id="tableBreakdown" class="stats-list"></div>
+            <p id="tableSummary" class="hidden"></p>
           </article>
-          <article class="card">
-            <span class="eyebrow">Andamento</span>
-            <h3>Checklist</h3>
-            <div class="bar"><span id="taskBar"></span></div>
-            <p id="taskSummary" class="muted"></p>
+
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Checklist</span></div>
+            <div class="donut-row">
+              <div id="taskDonut" class="donut task-donut"><div><strong id="taskDonutValue">0%</strong><small>concluído</small></div></div>
+              <div id="taskLegend" class="legend-list"></div>
+            </div>
+            <div class="hidden"><div class="bar"><span id="taskBar"></span></div><p id="taskSummary"></p></div>
           </article>
         </div>
 
-        <article class="card alerts-card">
+        <div class="premium-bottom-grid">
+          <article class="card mini-panel">
+            <div class="panel-title pink-title"><span>♡ Próximas tarefas</span></div>
+            <div id="nextTasksList" class="compact-list"></div>
+          </article>
+
+          <article class="card mini-panel">
+            <div class="panel-title blue-title"><span>▣ Próximos pagamentos</span></div>
+            <div id="nextPaymentsList" class="compact-list"></div>
+          </article>
+
+          <article class="card mini-panel">
+            <div class="panel-title green-title"><span>Últimas confirmações</span></div>
+            <div id="latestConfirmationsList" class="compact-list"></div>
+          </article>
+
+          <article class="card mini-panel">
+            <div class="panel-title purple-title"><span>Resumo financeiro</span></div>
+            <div class="finance-mini">
+              <div id="financeDonut" class="finance-donut"></div>
+              <div id="financeLegend" class="legend-list"></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card alerts-card premium-alerts">
           <div class="section-head"><div><span class="eyebrow">Atenção</span><h3>Próximos passos</h3></div></div>
           <div id="dashboardAlerts" class="alerts"></div>
         </article>

@@ -48,19 +48,120 @@ function render(){
 function openPage(id,title){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$("pageTitle").textContent=title;$("sidebar").classList.remove("open");window.scrollTo(0,0)}
 $("menuBtn").onclick=()=>$("sidebar").classList.toggle("open");
 function renderBrand(){const s=state.settings;$("brandTitle").textContent=s.appTitle;$("brandCouple").textContent=s.coupleNames;$("heroCouple").textContent=s.coupleNames;$("heroSubtitle").textContent=s.subtitle;$("brandDate").textContent=dateBR(s.weddingDate)+" • "+s.weddingTime;$("weddingLabel").textContent=new Date(s.weddingDate+"T"+s.weddingTime).toLocaleString("pt-BR",{dateStyle:"long",timeStyle:"short"})}
-function tick(){if(!state.settings)return;let x=Math.max(0,new Date(state.settings.weddingDate+"T"+state.settings.weddingTime+":00-03:00")-Date.now());$("days").textContent=Math.floor(x/86400000);x%=86400000;$("hours").textContent=Math.floor(x/3600000);x%=3600000;$("minutes").textContent=Math.floor(x/60000);$("seconds").textContent=Math.floor((x%60000)/1000)}
+function tick(){
+  if(!state.settings)return;
+  const wedding=new Date(state.settings.weddingDate+"T"+state.settings.weddingTime+":00-03:00");
+  let x=Math.max(0,wedding-Date.now());
+  const d=Math.floor(x/86400000);x%=86400000;
+  const h=Math.floor(x/3600000);x%=3600000;
+  const m=Math.floor(x/60000);
+  const s=Math.floor((x%60000)/1000);
+  $("days").textContent=d;$("daysBig").textContent=d;
+  $("hours").textContent=String(h).padStart(2,"0");
+  $("minutes").textContent=String(m).padStart(2,"0");
+  $("seconds").textContent=String(s).padStart(2,"0");
+  const start=new Date("2024-01-28T00:00:00-03:00");
+  const total=Math.max(1,wedding-start);
+  const elapsed=Math.max(0,Math.min(total,Date.now()-start));
+  const pct=Math.round(elapsed/total*100);
+  $("journeyPercent").textContent=pct+"% concluído";
+  $("journeyBar").style.width=pct+"%";
+  const heart=$(".journey-bar i"); if(heart) heart.style.left=`calc(${pct}% - 8px)`;
+}
 setInterval(tick,1000);
 function renderDashboard(){
-  const gs=state.guests,conf=gs.filter(g=>g.rsvp_status==="Confirmado"),pend=gs.filter(g=>g.rsvp_status==="Pendente"),ref=gs.filter(g=>g.rsvp_status==="Recusado");
-  const p=gs.reduce((a,g)=>a+people(g),0),w=gs.reduce((a,g)=>a+weight(g),0),st=conf.reduce((a,g)=>a+seats(g),0),nt=conf.filter(g=>!g.table_name).reduce((a,g)=>a+seats(g),0);
-  $("kPeople").textContent=p;$("kConfirmed").textContent=conf.reduce((a,g)=>a+people(g),0)+" pessoas confirmadas";$("kWeight").textContent=w.toLocaleString("pt-BR");$("kLimit").textContent="de "+state.settings.guestLimit;$("kSeats").textContent=st;$("kNoTable").textContent=nt+" assentos confirmados sem mesa";
-  const planned=state.finance.reduce((a,x)=>a+n(x.planned),0),paid=state.finance.reduce((a,x)=>a+n(x.paid),0);$("kBalance").textContent=money(planned-paid);$("kPaid").textContent=money(paid)+" pagos";
-  const pct=gs.length?Math.round(conf.length/gs.length*100):0;$("confirmTitle").textContent=pct+"% das famílias confirmadas";$("confirmChip").textContent=gs.length+" famílias";$("confirmBar").style.width=pct+"%";$("confirmDetails").textContent=`${conf.length} confirmadas, ${pend.length} pendentes e ${ref.length} recusadas.`;
-  $("categorySummary").textContent=`${gs.reduce((a,g)=>a+n(g.adults),0)} adultos, ${gs.reduce((a,g)=>a+n(g.children_0_8),0)} crianças de 0 a 8 e ${gs.reduce((a,g)=>a+n(g.children_9_12),0)} crianças de 9 a 12.`;
-  const cap=state.tables.reduce((a,t)=>a+n(t.capacity),0);$("tableSummary").textContent=`${state.tables.length} mesas, ${cap} lugares e ${cap-st} lugares disponíveis considerando apenas confirmados.`;
-  const done=state.tasks.filter(t=>t.completed).length,tp=state.tasks.length?Math.round(done/state.tasks.length*100):0;$("taskBar").style.width=tp+"%";$("taskSummary").textContent=`${done} de ${state.tasks.length} tarefas concluídas.`;
-  const today=new Date().toISOString().slice(0,10),late=state.tasks.filter(t=>!t.completed&&t.due_date&&t.due_date<today),dueSoon=state.finance.filter(x=>n(x.paid)<n(x.planned)&&x.due_date&&x.due_date>=today).sort((a,b)=>a.due_date.localeCompare(b.due_date)).slice(0,3);
-  const alerts=[];if(nt)alerts.push(`<div class="alert-item"><span>${nt} assentos confirmados ainda estão sem mesa.</span><strong>Organizar mesas</strong></div>`);if(late.length)alerts.push(`<div class="alert-item late"><span>${late.length} tarefa(s) atrasada(s).</span><strong>Revisar checklist</strong></div>`);dueSoon.forEach(x=>alerts.push(`<div class="alert-item"><span>${esc(x.description)} vence em ${dateBR(x.due_date)}.</span><strong>${money(n(x.planned)-n(x.paid))}</strong></div>`));if(!alerts.length)alerts.push(`<div class="alert-item"><span>Tudo em ordem por aqui.</span><strong>Sem pendências urgentes</strong></div>`);$("dashboardAlerts").innerHTML=alerts.join("");tick();
+  const gs=state.guests;
+  const conf=gs.filter(g=>g.rsvp_status==="Confirmado");
+  const pend=gs.filter(g=>g.rsvp_status==="Pendente");
+  const ref=gs.filter(g=>g.rsvp_status==="Recusado");
+  const p=gs.reduce((a,g)=>a+people(g),0);
+  const w=gs.reduce((a,g)=>a+weight(g),0);
+  const st=conf.reduce((a,g)=>a+seats(g),0);
+  const nt=conf.filter(g=>!g.table_name).reduce((a,g)=>a+seats(g),0);
+
+  $("kPeople").textContent=p;
+  $("kConfirmed").textContent=conf.reduce((a,g)=>a+people(g),0)+" confirmadas";
+  $("kWeight").textContent=w.toLocaleString("pt-BR");
+  $("kLimit").textContent="de "+state.settings.guestLimit;
+  $("kSeats").textContent=st;
+  $("kNoTable").textContent="Sem mesa: "+nt;
+
+  const planned=state.finance.reduce((a,x)=>a+n(x.planned),0);
+  const paid=state.finance.reduce((a,x)=>a+n(x.paid),0);
+  const remaining=Math.max(0,planned-paid);
+  $("kBalance").textContent=money(remaining);
+  $("kPaid").textContent=money(paid)+" pagos";
+
+  const pct=gs.length?Math.round(conf.length/gs.length*100):0;
+  $("confirmTitle").textContent=pct+"% das famílias confirmadas";
+  $("confirmChip").textContent=gs.length+" famílias";
+  $("confirmBar").style.width=pct+"%";
+  $("confirmDetails").textContent=`${conf.length} confirmadas, ${pend.length} pendentes e ${ref.length} recusadas.`;
+  $("confirmDonutValue").textContent=pct+"%";
+  $("confirmDonut").style.background=`conic-gradient(#13804f 0 ${pct}%, #f6be3e ${pct}% ${pct+(gs.length?Math.round(pend.length/gs.length*100):0)}%, #f04e78 0)`;
+  $("confirmLegend").innerHTML=`
+    <div><i class="dot green-dot"></i><span>Confirmadas</span><strong>${conf.length} famílias</strong></div>
+    <div><i class="dot yellow-dot"></i><span>Pendentes</span><strong>${pend.length} famílias</strong></div>
+    <div><i class="dot pink-dot"></i><span>Recusadas</span><strong>${ref.length} famílias</strong></div>`;
+
+  const adults=gs.reduce((a,g)=>a+n(g.adults),0);
+  const c08=gs.reduce((a,g)=>a+n(g.children_0_8),0);
+  const c912=gs.reduce((a,g)=>a+n(g.children_9_12),0);
+  $("categorySummary").textContent=`${adults} adultos, ${c08} crianças de 0 a 8 e ${c912} crianças de 9 a 12.`;
+  $("categoryBreakdown").innerHTML=`
+    <div><span><i class="mini-ico teal">●</i> Adultos</span><strong>${adults}</strong></div>
+    <div><span><i class="mini-ico orange">●</i> Crianças 0 a 8 anos</span><strong>${c08}</strong></div>
+    <div><span><i class="mini-ico purple">●</i> Crianças 9 a 12 anos</span><strong>${c912}</strong></div>
+    <div><span><i class="mini-ico violet">⚖</i> Total equivalente</span><strong>${w.toLocaleString("pt-BR")}</strong></div>`;
+
+  const cap=state.tables.reduce((a,t)=>a+n(t.capacity),0);
+  const usedTables=state.tables.filter(t=>tableUsage(t)>0).length;
+  $("tableSummary").textContent=`${state.tables.length} mesas, ${cap} lugares e ${cap-st} lugares disponíveis considerando apenas confirmados.`;
+  $("tableBreakdown").innerHTML=`
+    <div><span><i class="mini-ico green">♟</i> Mesas cadastradas</span><strong>${state.tables.length}</strong></div>
+    <div><span><i class="mini-ico teal">♟</i> Mesas utilizadas</span><strong>${usedTables}</strong></div>
+    <div><span><i class="mini-ico orange">●</i> Lugares ocupados</span><strong>${st}</strong></div>
+    <div><span><i class="mini-ico purple">●</i> Lugares disponíveis</span><strong>${Math.max(0,cap-st)}</strong></div>`;
+
+  const today=new Date().toISOString().slice(0,10);
+  const done=state.tasks.filter(t=>t.completed).length;
+  const late=state.tasks.filter(t=>!t.completed&&t.due_date&&t.due_date<today);
+  const open=state.tasks.filter(t=>!t.completed&&!late.includes(t));
+  const tp=state.tasks.length?Math.round(done/state.tasks.length*100):0;
+  $("taskBar").style.width=tp+"%";
+  $("taskSummary").textContent=`${done} de ${state.tasks.length} tarefas concluídas.`;
+  $("taskDonutValue").textContent=tp+"%";
+  $("taskDonut").style.background=`conic-gradient(#168a63 0 ${tp}%, #f6be3e ${tp}% ${Math.min(100,tp+(state.tasks.length?Math.round(open.length/state.tasks.length*100):0))}%, #f04e78 0)`;
+  $("taskLegend").innerHTML=`
+    <div><i class="dot green-dot"></i><span>Concluídas</span><strong>${done}</strong></div>
+    <div><i class="dot yellow-dot"></i><span>Pendentes</span><strong>${open.length}</strong></div>
+    <div><i class="dot pink-dot"></i><span>Atrasadas</span><strong>${late.length}</strong></div>
+    <small>${state.tasks.length} tarefas no total</small>`;
+
+  const nextTasks=state.tasks.filter(t=>!t.completed).sort((a,b)=>(a.due_date||"9999").localeCompare(b.due_date||"9999")).slice(0,3);
+  $("nextTasksList").innerHTML=nextTasks.length?nextTasks.map(t=>`<div><span>○ ${esc(t.title)}</span><strong>${t.due_date?dateBR(t.due_date):"Sem data"}</strong></div>`).join(""):`<p class="empty-note">Nenhuma tarefa pendente.</p>`;
+
+  const dueSoon=state.finance.filter(x=>n(x.paid)<n(x.planned)).sort((a,b)=>(a.due_date||"9999").localeCompare(b.due_date||"9999")).slice(0,3);
+  $("nextPaymentsList").innerHTML=dueSoon.length?dueSoon.map(x=>`<div><span>${esc(x.description)}</span><small>${x.due_date?dateBR(x.due_date):"Sem data"}</small><strong>${money(n(x.planned)-n(x.paid))}</strong></div>`).join(""):`<p class="empty-note">Nenhum pagamento pendente.</p>`;
+
+  const latest=[...conf].sort((a,b)=>String(b.updated_at||"").localeCompare(String(a.updated_at||""))).slice(0,3);
+  $("latestConfirmationsList").innerHTML=latest.length?latest.map(g=>`<div><span>✓ ${esc(g.name)}</span><strong>${g.updated_at?new Date(g.updated_at).toLocaleDateString("pt-BR"):"Confirmado"}</strong></div>`).join(""):`<p class="empty-note">Nenhuma confirmação ainda.</p>`;
+
+  const paidPct=planned?Math.round(paid/planned*100):0;
+  $("financeDonut").style.background=`conic-gradient(#8b60e8 0 ${paidPct}%, #f05a83 ${paidPct}% 100%)`;
+  $("financeLegend").innerHTML=`
+    <div><i class="dot violet-dot"></i><span>Previsto</span><strong>${money(planned)}</strong></div>
+    <div><i class="dot green-dot"></i><span>Pago</span><strong>${money(paid)}</strong></div>
+    <div><i class="dot pink-dot"></i><span>Restante</span><strong>${money(remaining)}</strong></div>
+    <small>Total previsto ${money(planned)}</small>`;
+
+  const alerts=[];
+  if(nt)alerts.push(`<div class="alert-item"><span>${nt} assentos confirmados ainda estão sem mesa.</span><strong>Organizar mesas</strong></div>`);
+  if(late.length)alerts.push(`<div class="alert-item late"><span>${late.length} tarefa(s) atrasada(s).</span><strong>Revisar checklist</strong></div>`);
+  dueSoon.slice(0,2).forEach(x=>alerts.push(`<div class="alert-item"><span>${esc(x.description)} ${x.due_date?"vence em "+dateBR(x.due_date):"está pendente"}.</span><strong>${money(n(x.planned)-n(x.paid))}</strong></div>`));
+  if(!alerts.length)alerts.push(`<div class="alert-item"><span>Tudo em ordem por aqui.</span><strong>Sem pendências urgentes</strong></div>`);
+  $("dashboardAlerts").innerHTML=alerts.join("");
+  tick();
 }
 function guestFiltered(){
   const q=$("guestSearch").value.toLowerCase(),side=$("guestSideFilter").value,status=$("guestStatusFilter").value,inv=$("guestInviteFilter").value;

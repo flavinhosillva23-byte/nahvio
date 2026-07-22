@@ -1,18 +1,206 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wedding Planner</title><link rel="stylesheet" href="styles.css"></head><body>
-<div id="setupError" class="login hidden"><div class="login-card"><h1>Configuração necessária</h1><p>Abra o arquivo <b>config.js</b> e cole a URL e a chave pública do Supabase.</p><p class="muted">As instruções completas estão no arquivo PASSO_A_PASSO.txt.</p></div></div>
-<div id="authScreen" class="login hidden"><div class="login-card"><div class="eyebrow">Área privada</div><h1>Flávio & Nathália</h1><p class="muted">Entre para acessar o planner compartilhado.</p><div id="authNotice" class="notice hidden"></div><div class="form"><label>E-mail<input id="email" type="email"></label><label>Senha<input id="password" type="password"></label></div><div class="actions"><button class="secondary" id="signupBtn">Criar conta</button><button class="primary" id="loginBtn">Entrar</button></div></div></div>
-<div id="app" class="shell hidden">
-<aside id="sidebar" class="sidebar"><div class="brand"><small id="brandTitle">Wedding Planner</small><h1 id="brandCouple">Flávio & Nathália</h1><p id="brandDate"></p></div><nav class="nav" id="nav"></nav></aside>
-<main><div class="top"><div><button class="secondary menu" id="menuBtn">☰</button><h2 id="pageTitle">Dashboard</h2><div class="muted" id="syncText">Sincronizado online</div></div><div><button class="secondary" id="logoutBtn">Sair</button></div></div>
-<section id="dashboard" class="page active"><div class="hero"><div class="photo"><img src="assets/casal.jpg"><div class="photo-copy"><h3 id="heroCouple"></h3><p id="heroSubtitle"></p></div></div><div class="card count"><div class="eyebrow">Contagem regressiva</div><h3 id="weddingLabel"></h3><div class="count-grid"><div class="time"><strong id="days">0</strong><span>Dias</span></div><div class="time"><strong id="hours">0</strong><span>Horas</span></div><div class="time"><strong id="minutes">0</strong><span>Minutos</span></div><div class="time"><strong id="seconds">0</strong><span>Segundos</span></div></div></div></div>
-<div class="kpis"><div class="card kpi"><span class="muted">Pessoas cadastradas</span><strong id="kPeople">0</strong><small id="kConfirmed"></small></div><div class="card kpi"><span class="muted">Contagem para o limite</span><strong id="kWeight">0</strong><small id="kLimit"></small></div><div class="card kpi"><span class="muted">Assentos necessários</span><strong id="kSeats">0</strong><small id="kNoTable"></small></div><div class="card kpi"><span class="muted">Saldo previsto</span><strong id="kBalance">R$ 0,00</strong><small id="kPaid"></small></div></div>
-<div class="grid2"><div class="card"><div class="eyebrow">Confirmações</div><h3 id="confirmTitle"></h3><div class="bar"><span id="confirmBar"></span></div><p id="confirmDetails"></p></div><div class="card"><div class="eyebrow">Categorias</div><h3>Composição da lista</h3><p id="categorySummary"></p></div><div class="card"><div class="eyebrow">Mesas</div><h3>Assentos</h3><p id="tableSummary"></p></div><div class="card"><div class="eyebrow">Checklist</div><h3>Andamento</h3><div class="bar"><span id="taskBar"></span></div><p id="taskSummary"></p></div></div></section>
-<section id="guests" class="page"><div class="toolbar"><input id="guestSearch" class="search" placeholder="Pesquisar convidados"><button class="primary" id="addGuestBtn">+ Novo convidado</button></div><div class="card table-wrap"><table><thead><tr><th>Nome ou família</th><th>Lado</th><th>Adultos</th><th>0 a 8</th><th>9 a 12</th><th>Conta</th><th>Assentos</th><th>Convite</th><th>Confirmação</th><th>Mesa</th><th></th></tr></thead><tbody id="guestRows"></tbody></table></div></section>
-<section id="tables" class="page"><div class="toolbar"><span></span><button class="primary" id="addTableBtn">+ Nova mesa</button></div><div class="card table-wrap"><table><thead><tr><th>Mesa</th><th>Capacidade</th><th>Ocupados</th><th>Disponíveis</th><th></th></tr></thead><tbody id="tableRows"></tbody></table></div></section>
-<section id="finance" class="page"><div class="toolbar"><span></span><button class="primary" id="addFinanceBtn">+ Novo lançamento</button></div><div class="card table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Previsto</th><th>Pago</th><th>Vencimento</th><th></th></tr></thead><tbody id="financeRows"></tbody></table></div></section>
-<section id="gifts" class="page"><div class="toolbar"><span></span><button class="primary" id="addGiftBtn">+ Novo presente</button></div><div class="card table-wrap"><table><thead><tr><th>Presente</th><th>Quem deu</th><th>Recebido</th><th>Agradecimento</th><th></th></tr></thead><tbody id="giftRows"></tbody></table></div></section>
-<section id="tasks" class="page"><div class="toolbar"><span></span><button class="primary" id="addTaskBtn">+ Nova tarefa</button></div><div class="card" id="taskList"></div></section>
-<section id="settings" class="page"><div class="card"><h3>Configurações gerais</h3><div class="settings-grid"><label>Título<input id="sAppTitle"></label><label>Nomes do casal<input id="sCoupleNames"></label><label>Data<input id="sDate" type="date"></label><label>Horário<input id="sTime" type="time"></label><label class="full">Texto da foto<input id="sSubtitle"></label><label>Limite de convidados<input id="sGuestLimit" type="number" step=".5"></label><label>Capacidade padrão<input id="sCapacity" type="number"></label><label>Peso adulto<input id="sAdultWeight" type="number" step=".1"></label><label>Peso 0 a 8<input id="sChild08Weight" type="number" step=".1"></label><label>Peso 9 a 12<input id="sChild912Weight" type="number" step=".1"></label><label>Adulto ocupa assento?<select id="sAdultSeat"><option value="true">Sim</option><option value="false">Não</option></select></label><label>0 a 8 ocupa assento?<select id="sChild08Seat"><option value="true">Sim</option><option value="false">Não</option></select></label><label>9 a 12 ocupa assento?<select id="sChild912Seat"><option value="true">Sim</option><option value="false">Não</option></select></label></div><div class="actions"><button class="primary" id="saveSettingsBtn">Salvar configurações</button></div></div></section>
-</main></div>
-<div id="modal" class="modal hidden"><div class="modalbox"><div class="modalhead"><h3 id="modalTitle"></h3><button class="close" id="closeModal">×</button></div><div id="modalBody"></div></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#123f33">
+  <title>Wedding Planner</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <section id="setupError" class="login hidden">
+    <div class="login-card">
+      <span class="eyebrow">Configuração necessária</span>
+      <h1>Conecte o Supabase</h1>
+      <p>Abra o arquivo <strong>config.js</strong> e informe a URL e a chave pública.</p>
+    </div>
+  </section>
+
+  <section id="authScreen" class="login hidden">
+    <div class="login-card">
+      <span class="eyebrow">Área privada</span>
+      <h1>Flávio &amp; Nathália</h1>
+      <p class="muted">Entre para acessar o planejamento compartilhado.</p>
+      <div id="authNotice" class="notice hidden"></div>
+      <div class="form one">
+        <label>E-mail<input id="email" type="email" autocomplete="email"></label>
+        <label>Senha<input id="password" type="password" autocomplete="current-password"></label>
+      </div>
+      <div class="actions">
+        <button id="signupBtn" class="secondary">Criar conta</button>
+        <button id="loginBtn" class="primary">Entrar</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <small id="brandTitle">Wedding Planner</small>
+        <h1 id="brandCouple">Flávio &amp; Nathália</h1>
+        <p id="brandDate"></p>
+      </div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-foot">
+        <span class="sync-dot"></span><span id="syncText">Sincronizado</span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="top">
+        <div class="top-title">
+          <button id="menuBtn" class="secondary menu" aria-label="Abrir menu">☰</button>
+          <div>
+            <h2 id="pageTitle">Dashboard</h2>
+            <p class="muted">Planejamento compartilhado em tempo real</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="refreshBtn" class="secondary">Atualizar</button>
+          <button id="logoutBtn" class="secondary">Sair</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active">
+        <div class="hero">
+          <div class="photo">
+            <img src="assets/casal.jpg" alt="Flávio e Nathália">
+            <div class="photo-copy">
+              <span class="eyebrow light">Nosso grande dia</span>
+              <h3 id="heroCouple"></h3>
+              <p id="heroSubtitle"></p>
+            </div>
+          </div>
+          <div class="card count">
+            <span class="eyebrow">Contagem regressiva</span>
+            <h3 id="weddingLabel"></h3>
+            <div class="count-grid">
+              <div class="time"><strong id="days">0</strong><span>Dias</span></div>
+              <div class="time"><strong id="hours">0</strong><span>Horas</span></div>
+              <div class="time"><strong id="minutes">0</strong><span>Minutos</span></div>
+              <div class="time"><strong id="seconds">0</strong><span>Segundos</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <article class="card kpi"><span>Pessoas cadastradas</span><strong id="kPeople">0</strong><small id="kConfirmed"></small></article>
+          <article class="card kpi"><span>Contagem para o limite</span><strong id="kWeight">0</strong><small id="kLimit"></small></article>
+          <article class="card kpi"><span>Assentos necessários</span><strong id="kSeats">0</strong><small id="kNoTable"></small></article>
+          <article class="card kpi"><span>Saldo previsto</span><strong id="kBalance">R$ 0,00</strong><small id="kPaid"></small></article>
+        </div>
+
+        <div class="grid2">
+          <article class="card">
+            <div class="section-head"><div><span class="eyebrow">Confirmações</span><h3 id="confirmTitle">0%</h3></div><span id="confirmChip" class="chip">0 famílias</span></div>
+            <div class="bar"><span id="confirmBar"></span></div>
+            <p id="confirmDetails" class="muted"></p>
+          </article>
+          <article class="card">
+            <span class="eyebrow">Composição da lista</span>
+            <h3>Categorias</h3>
+            <p id="categorySummary" class="muted"></p>
+          </article>
+          <article class="card">
+            <span class="eyebrow">Organização</span>
+            <h3>Mesas</h3>
+            <p id="tableSummary" class="muted"></p>
+          </article>
+          <article class="card">
+            <span class="eyebrow">Andamento</span>
+            <h3>Checklist</h3>
+            <div class="bar"><span id="taskBar"></span></div>
+            <p id="taskSummary" class="muted"></p>
+          </article>
+        </div>
+
+        <article class="card alerts-card">
+          <div class="section-head"><div><span class="eyebrow">Atenção</span><h3>Próximos passos</h3></div></div>
+          <div id="dashboardAlerts" class="alerts"></div>
+        </article>
+      </section>
+
+      <section id="guests" class="page">
+        <div class="toolbar">
+          <input id="guestSearch" class="search" placeholder="Pesquisar nome ou família">
+          <select id="guestSideFilter"><option value="">Todos os lados</option><option>Flávio</option><option>Nathália</option><option>Ambos</option></select>
+          <select id="guestStatusFilter"><option value="">Todas as confirmações</option><option>Pendente</option><option>Confirmado</option><option>Recusado</option></select>
+          <select id="guestInviteFilter"><option value="">Todos os convites</option><option>Não enviado</option><option>Enviado</option></select>
+          <button id="exportGuestsBtn" class="secondary">Exportar CSV</button>
+          <button id="addGuestBtn" class="primary">+ Novo convidado</button>
+        </div>
+        <div id="guestSummary" class="summary-strip"></div>
+        <div class="card table-wrap">
+          <table>
+            <thead><tr><th>Nome ou família</th><th>Lado</th><th>Adultos</th><th>0 a 8</th><th>9 a 12</th><th>Conta</th><th>Assentos</th><th>Convite</th><th>Confirmação</th><th>Mesa</th><th>Ações</th></tr></thead>
+            <tbody id="guestRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tables" class="page">
+        <div class="toolbar"><div class="muted">Visualize ocupação e lotação rapidamente.</div><button id="addTableBtn" class="primary">+ Nova mesa</button></div>
+        <div id="tableCards" class="table-cards"></div>
+        <div class="card table-wrap">
+          <table><thead><tr><th>Mesa</th><th>Capacidade</th><th>Ocupados</th><th>Disponíveis</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="tableRows"></tbody></table>
+        </div>
+      </section>
+
+      <section id="finance" class="page">
+        <div class="toolbar">
+          <input id="financeSearch" class="search" placeholder="Pesquisar descrição ou categoria">
+          <button id="exportFinanceBtn" class="secondary">Exportar CSV</button>
+          <button id="addFinanceBtn" class="primary">+ Novo lançamento</button>
+        </div>
+        <div id="financeSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Previsto</th><th>Pago</th><th>Restante</th><th>Vencimento</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="financeRows"></tbody></table></div>
+      </section>
+
+      <section id="gifts" class="page">
+        <div class="toolbar"><input id="giftSearch" class="search" placeholder="Pesquisar presente ou pessoa"><button id="addGiftBtn" class="primary">+ Novo presente</button></div>
+        <div id="giftSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Presente</th><th>Quem deu</th><th>Recebido</th><th>Agradecimento</th><th>Ações</th></tr></thead><tbody id="giftRows"></tbody></table></div>
+      </section>
+
+      <section id="tasks" class="page">
+        <div class="toolbar">
+          <select id="taskFilter"><option value="">Todas as tarefas</option><option value="open">Pendentes</option><option value="done">Concluídas</option><option value="late">Atrasadas</option></select>
+          <button id="addTaskBtn" class="primary">+ Nova tarefa</button>
+        </div>
+        <div id="taskSummaryTop" class="summary-strip"></div>
+        <div id="taskList" class="card task-list"></div>
+      </section>
+
+      <section id="settings" class="page">
+        <div class="card">
+          <span class="eyebrow">Personalização</span><h3>Configurações gerais</h3>
+          <div class="settings-grid">
+            <label>Título<input id="sAppTitle"></label><label>Nomes do casal<input id="sCoupleNames"></label>
+            <label>Data<input id="sDate" type="date"></label><label>Horário<input id="sTime" type="time"></label>
+            <label class="full">Texto da foto<input id="sSubtitle"></label>
+            <label>Limite equivalente<input id="sGuestLimit" type="number" step=".5"></label><label>Capacidade padrão de mesa<input id="sCapacity" type="number"></label>
+            <label>Peso adulto<input id="sAdultWeight" type="number" step=".5"></label><label>Peso 0 a 8<input id="sChild08Weight" type="number" step=".5"></label>
+            <label>Peso 9 a 12<input id="sChild912Weight" type="number" step=".5"></label>
+            <label>Adulto ocupa assento?<select id="sAdultSeat"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>0 a 8 ocupa assento?<select id="sChild08Seat"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>9 a 12 ocupa assento?<select id="sChild912Seat"><option value="true">Sim</option><option value="false">Não</option></select></label>
+          </div>
+          <div class="actions"><button id="saveSettingsBtn" class="primary">Salvar configurações</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modalbox">
+      <div class="modalhead"><h3 id="modalTitle"></h3><button id="closeModal" class="close" aria-label="Fechar">×</button></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

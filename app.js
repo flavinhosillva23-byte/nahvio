@@ -80,19 +80,25 @@ function renderDashboard(){
   const nt=conf.filter(g=>!g.table_name).reduce((a,g)=>a+seats(g),0);
 
   $("kPeople").textContent=p;
-  $("kConfirmed").textContent=conf.reduce((a,g)=>a+people(g),0)+" confirmadas";
-  $("kWeight").textContent=w.toLocaleString("pt-BR");
-  $("kLimit").textContent="de "+state.settings.guestLimit;
-  $("kSeats").textContent=st;
-  $("kNoTable").textContent="Sem mesa: "+nt;
+  $("kConfirmed").textContent=`${conf.reduce((a,g)=>a+people(g),0)} confirmados • ${gs.length} famílias`;
+
+  const pct=gs.length?Math.round(conf.length/gs.length*100):0;
+  $("kRsvp").textContent=pct+"%";
+  $("kPending").textContent=`${pend.length} famílias pendentes`;
+
+  const totalTables=state.tables.length;
+  const organizedTables=state.tables.filter(t=>tableUsage(t)>0).length;
+  const fullyOrganizedTables=state.tables.filter(t=>tableUsage(t)>=n(t.capacity)).length;
+  $("kTables").textContent=`${organizedTables} de ${totalTables}`;
+  $("kTableStatus").textContent=totalTables
+    ? `${fullyOrganizedTables} completas • ${Math.max(0,totalTables-organizedTables)} vazias`
+    : "Nenhuma mesa cadastrada";
 
   const planned=state.finance.reduce((a,x)=>a+n(x.planned),0);
   const paid=state.finance.reduce((a,x)=>a+n(x.paid),0);
   const remaining=Math.max(0,planned-paid);
   $("kBalance").textContent=money(remaining);
-  $("kPaid").textContent=money(paid)+" pagos";
-
-  const pct=gs.length?Math.round(conf.length/gs.length*100):0;
+  $("kPaid").textContent=planned?`${Math.round((paid/planned)*100)}% do orçamento pago`:`${money(paid)} pagos`;
   $("confirmTitle").textContent=pct+"% das famílias confirmadas";
   $("confirmChip").textContent=gs.length+" famílias";
   $("confirmBar").style.width=pct+"%";

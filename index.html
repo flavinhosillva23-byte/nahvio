@@ -38,7 +38,7 @@
 
   <div id="app" class="shell hidden">
     <aside id="sidebar" class="sidebar">
-        <button id="mobileMenuCloseBtn" class="mobile-menu-close" aria-label="Fechar menu">×</button>
+        <button id="mobileMenuCloseBtn" type="button" class="mobile-menu-close" aria-label="Fechar menu">×</button>
       <div class="brand">
         <small id="brandTitle">Wedding Planner</small>
         <h1 id="brandCouple">Flávio &amp; Nathália</h1>
@@ -49,12 +49,12 @@
         <span class="sync-dot"></span><span id="syncText">Sincronizado</span>
       </div>
     </aside>
-      <button id="sidebarOverlay" class="sidebar-overlay" aria-label="Fechar menu"></button>
+      <button id="sidebarOverlay" type="button" class="sidebar-overlay" aria-label="Fechar menu" tabindex="-1"></button>
 
     <main>
       <header class="top">
         <div class="top-title">
-          <button id="menuBtn" class="secondary menu" aria-label="Abrir menu">☰</button>
+          <button id="menuBtn" type="button" class="secondary menu mobile-menu-btn" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">☰</button>
           <div>
             <h2 id="pageTitle">Dashboard</h2>
             <p class="muted">Planejamento compartilhado em tempo real</p>

@@ -271,7 +271,10 @@ function render(){
     const parent=p.sub?"shower":"wedding";
     return `<button class="${p.id==="dashboard"?"active":""} ${p.sub?"nav-sub":""}" data-nav-parent="${parent}" data-page="${p.id}" data-title="${p.label}"><span>${p.icon}</span>${p.label}</button>`;
   }).join("");
-  document.querySelectorAll("#nav [data-page]").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.dataset.title));
+  document.querySelectorAll("#nav [data-page]").forEach(b=>b.onclick=e=>{
+    e.preventDefault();
+    openPage(b.dataset.page,b.dataset.title);
+  });
   document.querySelectorAll("#nav [data-nav-group]").forEach(b=>b.onclick=e=>{e.stopPropagation();
     b.classList.toggle("open");
     document.querySelectorAll(`#nav [data-nav-parent="${b.dataset.navGroup}"]`).forEach(x=>x.classList.toggle("nav-collapsed",!b.classList.contains("open")));
@@ -288,9 +291,37 @@ function openPage(id,title){
     const isShower=id.startsWith("shower-");
     $("pageContext").innerHTML=`<span>${isShower?"🎁 Chá de Cozinha":"💍 Casamento"}</span><strong>${esc(title||"")}</strong>`;
   }
-  $("sidebar").classList.remove("open");window.scrollTo(0,0);
+  closeMobileMenu();
+  window.scrollTo(0,0);
 }
-$("menuBtn").onclick=()=>$("sidebar").classList.toggle("open");
+
+function isMobileMenu(){return window.matchMedia("(max-width: 980px)").matches}
+function setMobileMenu(open){
+  const sidebar=$("sidebar"),button=$("menuBtn"),overlay=$("sidebarOverlay");
+  const shouldOpen=Boolean(open&&isMobileMenu());
+  document.body.classList.toggle("sidebar-open",shouldOpen);
+  sidebar?.classList.toggle("open",shouldOpen);
+  button?.setAttribute("aria-expanded",String(shouldOpen));
+  sidebar?.setAttribute("aria-hidden",String(isMobileMenu()&&!shouldOpen));
+  if(overlay)overlay.tabIndex=shouldOpen?0:-1;
+}
+function closeMobileMenu(){setMobileMenu(false)}
+function initMobileMenu(){
+  const button=$("menuBtn"),close=$("mobileMenuCloseBtn"),overlay=$("sidebarOverlay"),sidebar=$("sidebar");
+  button?.addEventListener("click",e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    setMobileMenu(!document.body.classList.contains("sidebar-open"));
+  });
+  close?.addEventListener("click",e=>{e.preventDefault();closeMobileMenu()});
+  overlay?.addEventListener("click",e=>{e.preventDefault();closeMobileMenu()});
+  sidebar?.addEventListener("click",e=>e.stopPropagation());
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMobileMenu()});
+  window.addEventListener("resize",()=>{if(!isMobileMenu())closeMobileMenu()});
+  setMobileMenu(false);
+}
+initMobileMenu();
+
 function applyTheme(theme){document.body.dataset.theme=theme||"classic"}
 function renderBrand(){const s=state.settings;applyTheme(s.theme||"classic");$("brandTitle").textContent=s.appTitle;$("brandCouple").textContent=s.coupleNames;$("heroCouple").textContent=s.coupleNames;if($("heroSubtitle"))$("heroSubtitle").textContent=s.subtitle;$("brandDate").textContent=dateBR(s.weddingDate)+" • "+s.weddingTime;$("weddingLabel").textContent=new Date(s.weddingDate+"T"+s.weddingTime).toLocaleString("pt-BR",{dateStyle:"long",timeStyle:"short"})}
 function tick(){
@@ -698,13 +729,6 @@ if($("saveShowerSettingsBtn"))$("saveShowerSettingsBtn").onclick=async()=>{
 };
 
 
-if($("mobileMenuBtn"))$("mobileMenuBtn").onclick=()=>{
-  document.body.classList.toggle("sidebar-open");
-};
-if($("sidebarOverlay"))$("sidebarOverlay").onclick=()=>document.body.classList.remove("sidebar-open");
-document.addEventListener("click",e=>{
-  if(e.target.closest("#nav [data-page]")&&window.innerWidth<=900)document.body.classList.remove("sidebar-open");
-});
 
 
 document.addEventListener("click",e=>{const b=e.target.closest("[data-alert-page]");if(b){const p=pages.find(x=>x.id===b.dataset.alertPage);openPage(b.dataset.alertPage,p?.label||"Página")}});
@@ -721,17 +745,3 @@ if($("ceremonyFullscreenBtn"))$("ceremonyFullscreenBtn").onclick=()=>document.bo
 setInterval(updateCeremony,30000);
 
 
-function setMobileMenu(open){
-  document.body.classList.toggle("sidebar-open",open);
-  const btn=$("mobileMenuBtn"),sidebar=$("sidebar");
-  if(btn)btn.setAttribute("aria-expanded",String(open));
-  if(sidebar)sidebar.setAttribute("aria-hidden",String(!open&&window.innerWidth<=900));
-}
-if($("mobileMenuBtn"))$("mobileMenuBtn").onclick=e=>{e.stopPropagation();setMobileMenu(!document.body.classList.contains("sidebar-open"))};
-if($("mobileMenuCloseBtn"))$("mobileMenuCloseBtn").onclick=()=>setMobileMenu(false);
-if($("sidebarOverlay"))$("sidebarOverlay").onclick=()=>setMobileMenu(false);
-document.addEventListener("keydown",e=>{if(e.key==="Escape")setMobileMenu(false)});
-document.addEventListener("click",e=>{
-  if(window.innerWidth<=900&&e.target.closest("#nav [data-page]"))setMobileMenu(false);
-});
-window.addEventListener("resize",()=>{if(window.innerWidth>900)setMobileMenu(false)});

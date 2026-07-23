@@ -179,3 +179,14 @@ body{background:radial-gradient(circle at 70% 0,#fff7f5 0,#f7f1e6 35%,#f6f1e7 10
   body.sidebar-open .sidebar-overlay{display:block}
   .content{width:100%}
 }
+
+.import-toolbar{display:grid;grid-template-columns:1fr 190px;gap:9px;margin:13px 0 9px}
+.import-actions-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+.import-actions-row span{margin-left:auto;font-size:13px;font-weight:800;color:#6c625f}
+.import-option[hidden]{display:none}
+.import-option.already-imported{opacity:.58;background:#f5f2f0}
+.import-option.already-imported small{color:#7b817d;font-weight:800}
+@media(max-width:620px){
+  .import-toolbar{grid-template-columns:1fr}
+  .import-actions-row span{width:100%;margin-left:0}
+}

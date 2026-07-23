@@ -577,8 +577,58 @@ if($("addShowerFinanceBtn"))$("addShowerFinanceBtn").onclick=()=>showerFinanceMo
 if($("addShowerScheduleBtn"))$("addShowerScheduleBtn").onclick=()=>showerScheduleModal();
 if($("exportShowerPdfBtn"))$("exportShowerPdfBtn").onclick=exportShowerPDF;
 if($("importWeddingGuestsBtn"))$("importWeddingGuestsBtn").onclick=()=>{
-  const options=state.guests.map(g=>`<label class="import-option"><input type="checkbox" value="${g.id}"><span>${esc(g.name)}</span><small>${esc(g.rsvp_status)}</small></label>`).join("");
-  modal("Importar convidados do casamento",`<p class="muted">Selecione quem também será convidado para o chá. Os cadastros serão independentes.</p><div class="import-list">${options}</div><div class="actions"><button class="primary" onclick="importWeddingGuests()">Importar selecionados</button></div>`);
+  const imported=new Set(state.showerGuests.map(x=>x.full_name.trim().toLowerCase()));
+  const options=state.guests.map(g=>{
+    const already=imported.has(String(g.name||"").trim().toLowerCase());
+    return `<label class="import-option ${already?"already-imported":""}" data-import-name="${esc(String(g.name||"").toLowerCase())}" data-import-status="${esc(String(g.rsvp_status||"").toLowerCase())}">
+      <input type="checkbox" value="${g.id}" ${already?"disabled":""}>
+      <span>${esc(g.name)}</span>
+      <small>${already?"Já importado":esc(g.rsvp_status)}</small>
+    </label>`;
+  }).join("");
+  modal("Importar convidados do casamento",`
+    <p class="muted">Pesquise e selecione quem também será convidado para o chá. Os cadastros continuarão independentes.</p>
+    <div class="import-toolbar">
+      <input id="importGuestSearch" class="search" placeholder="Pesquisar convidado">
+      <select id="importGuestStatus">
+        <option value="">Todos os status</option>
+        <option value="confirmado">Confirmado</option>
+        <option value="pendente">Pendente</option>
+        <option value="recusado">Recusado</option>
+      </select>
+    </div>
+    <div class="import-actions-row">
+      <button type="button" class="secondary" id="selectVisibleGuestsBtn">Selecionar visíveis</button>
+      <button type="button" class="secondary" id="clearImportedSelectionBtn">Limpar seleção</button>
+      <span id="importSelectedCount">0 selecionados</span>
+    </div>
+    <div class="import-list">${options}</div>
+    <div class="actions"><button class="primary" onclick="importWeddingGuests()">Importar selecionados</button></div>
+  `);
+  const applyFilter=()=>{
+    const q=($("importGuestSearch")?.value||"").trim().toLowerCase();
+    const status=$("importGuestStatus")?.value||"";
+    document.querySelectorAll(".import-option").forEach(row=>{
+      const matchName=!q||row.dataset.importName.includes(q);
+      const matchStatus=!status||row.dataset.importStatus===status;
+      row.hidden=!(matchName&&matchStatus);
+    });
+  };
+  const updateCount=()=>{
+    const count=document.querySelectorAll(".import-option input:checked").length;
+    if($("importSelectedCount"))$("importSelectedCount").textContent=`${count} selecionado${count===1?"":"s"}`;
+  };
+  $("importGuestSearch").oninput=applyFilter;
+  $("importGuestStatus").onchange=applyFilter;
+  document.querySelectorAll(".import-option input").forEach(x=>x.onchange=updateCount);
+  $("selectVisibleGuestsBtn").onclick=()=>{
+    document.querySelectorAll(".import-option:not([hidden]) input:not(:disabled)").forEach(x=>x.checked=true);
+    updateCount();
+  };
+  $("clearImportedSelectionBtn").onclick=()=>{
+    document.querySelectorAll(".import-option input:checked").forEach(x=>x.checked=false);
+    updateCount();
+  };
 };
 window.importWeddingGuests=async()=>{
   const ids=[...document.querySelectorAll(".import-option input:checked")].map(x=>x.value);

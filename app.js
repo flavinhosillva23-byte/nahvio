@@ -4,7 +4,7 @@ if(!cfg.supabaseUrl||cfg.supabaseUrl.includes("COLE_AQUI")||!cfg.supabaseAnonKey
   $("setupError").classList.remove("hidden"); throw new Error("Supabase não configurado");
 }
 const db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-const state={settings:null,guests:[],tables:[],seats:[],seatsReady:false,finance:[],gifts:[],tasks:[],showerSettings:null,showerGuests:[],showerGifts:[],showerTasks:[],showerGames:[],showerFinance:[],showerSchedule:[],edit:null,channel:null};
+const state={settings:null,guests:[],tables:[],seats:[],seatsReady:false,finance:[],gifts:[],tasks:[],showerSettings:null,showerGuests:[],showerGifts:[],showerTasks:[],showerGames:[],showerFinance:[],showerSchedule:[],documents:[],edit:null,channel:null};
 const n=v=>Number(v||0);
 const money=v=>n(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const dateBR=v=>v?new Date(v+"T12:00:00").toLocaleDateString("pt-BR"):"";
@@ -29,7 +29,7 @@ function showerGuestFiltered(){
   return state.showerGuests.filter(g=>(`${g.full_name} ${g.cpf||""} ${g.phone||""}`).toLowerCase().includes(q)&&(!st||g.rsvp_status===st));
 }
 function renderShower(){
-  if(!$("shower"))return;
+  if(!$("shower-dashboard"))return;
   const s=state.showerSettings||{};
   document.documentElement.style.setProperty("--shower-primary",s.primaryColor||"#f05a83");
   document.documentElement.style.setProperty("--shower-secondary",s.secondaryColor||"#8b60e8");
@@ -61,7 +61,7 @@ function renderShowerGuests(){
   $("showerGuestRows").innerHTML=rows.map(g=>`<tr class="${g.rsvp_status==="Confirmado"?"guest-confirmed":g.rsvp_status==="Recusado"?"guest-declined":"guest-pending"}"><td><strong>${esc(g.full_name)}</strong></td><td>${showCpf?esc(formatCPF(g.cpf||"")):"•••.•••.•••-••"}</td><td>${esc(g.phone||"")}</td><td>${1+n(g.companions)}</td><td>${badge(g.rsvp_status)}</td><td>${esc(g.notes||"")}</td><td><button class="secondary" onclick="showerGuestModal('${g.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_guests','${g.id}')">Excluir</button></td></tr>`).join("")||`<tr><td colspan="7">Nenhum convidado cadastrado.</td></tr>`;
 }
 window.showerGuestModal=id=>{const g=state.showerGuests.find(x=>x.id===id)||{full_name:"",cpf:"",phone:"",companions:0,rsvp_status:"Pendente",notes:""};state.edit=id;modal(id?"Editar convidado do chá":"Novo convidado do chá",`<div class="form"><label class="full">Nome completo<input id="sgName" value="${esc(g.full_name)}"></label><label>CPF<input id="sgCpf" inputmode="numeric" maxlength="14" value="${esc(formatCPF(g.cpf||""))}" oninput="this.value=formatCPF(this.value)"></label><label>Telefone<input id="sgPhone" value="${esc(g.phone||"")}"></label><label>Acompanhantes<input id="sgComp" type="number" min="0" max="${n(state.showerSettings.maxCompanions)||20}" value="${n(g.companions)}"></label><label>Confirmação<select id="sgRsvp">${["Pendente","Confirmado","Recusado"].map(x=>`<option ${x===g.rsvp_status?"selected":""}>${x}</option>`)}</select></label><label class="full">Observações<textarea id="sgNotes">${esc(g.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerGuest()">Salvar convidado</button></div>`)};
-window.saveShowerGuest=async()=>{const name=$("sgName").value.trim(),cpf=onlyDigits($("sgCpf").value);if(!name)return toast("Informe o nome completo.");if(state.showerSettings.cpfRequired&&!cpf)return toast("O CPF é obrigatório.");if(cpf&&!validCPF(cpf))return toast("Informe um CPF válido.");const obj={full_name:name,cpf:cpf||null,phone:$("sgPhone").value.trim(),companions:+$("sgComp").value,rsvp_status:$("sgRsvp").value,notes:$("sgNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_guests").update(obj).eq("id",state.edit):await db.from("shower_guests").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Convidado salvo.")}};
+window.saveShowerGuest=async()=>{const name=$("sgName").value.trim(),cpf=onlyDigits($("sgCpf").value);if(!name)return toast("Informe o nome completo.");if(state.showerSettings.cpfRequired&&!cpf)return toast("O CPF é obrigatório.");if(cpf&&!validCPF(cpf))return toast("Informe um CPF válido.");const obj={full_name:name,cpf:cpf||null,phone:$("sgPhone").value.trim(),companions:+$("sgComp").value,rsvp_status:$("sgRsvp").value,notes:$("sgNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_guests").update(obj).eq("id",state.edit):await db.from("shower_guests").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Convidado salvo.");await loadAll()}};
 function renderShowerGifts(){const q=($("showerGiftSearch")?.value||"").toLowerCase(),f=$("showerGiftFilter")?.value||"",rows=state.showerGifts.filter(x=>(`${x.item} ${x.given_by||""}`).toLowerCase().includes(q)&&(!f||x.status===f));$("showerGiftSummary").innerHTML=`<span class="summary-pill">Total <strong>${rows.length}</strong></span><span class="summary-pill">Reservados <strong>${rows.filter(x=>x.status==="Reservado").length}</strong></span><span class="summary-pill">Recebidos <strong>${rows.filter(x=>x.status==="Recebido").length}</strong></span>`;$("showerGiftRows").innerHTML=rows.map(x=>`<tr><td><strong>${esc(x.item)}</strong></td><td>${esc(x.category||"")}</td><td>${badge(x.status)}</td><td>${esc(x.given_by||"")}</td><td>${money(x.estimated_value)}</td><td>${esc(x.notes||"")}</td><td><button class="secondary" onclick="showerGiftModal('${x.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_gifts','${x.id}')">Excluir</button></td></tr>`).join("")||`<tr><td colspan="7">Nenhum presente cadastrado.</td></tr>`}
 window.showerGiftModal=id=>{const x=state.showerGifts.find(v=>v.id===id)||{item:"",category:"Cozinha",status:"Disponível",given_by:"",estimated_value:0,notes:""};state.edit=id;modal(id?"Editar presente":"Novo presente",`<div class="form"><label class="full">Presente<input id="shgItem" value="${esc(x.item)}"></label><label>Categoria<input id="shgCat" value="${esc(x.category||"")}"></label><label>Status<select id="shgStatus">${["Disponível","Reservado","Recebido"].map(v=>`<option ${v===x.status?"selected":""}>${v}</option>`)}</select></label><label>Quem reservou ou presenteou<input id="shgBy" value="${esc(x.given_by||"")}"></label><label>Valor estimado<input id="shgValue" type="number" step=".01" value="${n(x.estimated_value)}"></label><label class="full">Observações<textarea id="shgNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerGift()">Salvar presente</button></div>`)};
 window.saveShowerGift=async()=>{if(!$("shgItem").value.trim())return toast("Informe o presente.");const obj={item:$("shgItem").value.trim(),category:$("shgCat").value.trim(),status:$("shgStatus").value,given_by:$("shgBy").value.trim(),estimated_value:+$("shgValue").value,notes:$("shgNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_gifts").update(obj).eq("id",state.edit):await db.from("shower_gifts").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Presente salvo.")}};
@@ -209,7 +209,7 @@ $("refreshBtn").onclick=()=>loadAll(true);
 async function showApp(){$("authScreen").classList.add("hidden");$("app").classList.remove("hidden");await loadAll();subscribe()}
 async function loadAll(manual=false){
   $("syncText").textContent="Atualizando...";
-  const [s,g,t,z,f,p,c,ss,sg,sf,st,sgm,sfi,ssc]=await Promise.all([
+  const [s,g,t,z,f,p,c,ss,sg,sf,st,sgm,sfi,ssc,docs]=await Promise.all([
     db.from("settings").select("*").eq("key","general").single(),
     db.from("guests").select("*").order("name"),
     db.from("wedding_tables").select("*").order("name"),
@@ -223,12 +223,13 @@ async function loadAll(manual=false){
     db.from("shower_tasks").select("*").order("due_date",{ascending:true}),
     db.from("shower_games").select("*").order("position_index",{ascending:true}),
     db.from("shower_finance").select("*").order("created_at",{ascending:false}),
-    db.from("shower_schedule").select("*").order("position_index",{ascending:true})
+    db.from("shower_schedule").select("*").order("position_index",{ascending:true}),
+    db.from("documents").select("*").order("created_at",{ascending:false})
   ]);
   if(s.error){alert("Erro ao carregar configurações: "+s.error.message);return}
   state.settings=s.data.value;state.guests=g.data||[];state.tables=(t.data||[]).sort((a,b)=>n(a.position_index)-n(b.position_index)||String(a.name).localeCompare(String(b.name),"pt-BR",{numeric:true}));state.seatsReady=!z.error;state.seats=z.data||[];state.finance=f.data||[];state.gifts=p.data||[];state.tasks=c.data||[];
   state.showerSettings=ss.data?.value||{eventName:"Chá de Cozinha",menuLabel:"Chá de Cozinha",eventIcon:"🎁",eventDate:"2026-08-08",eventTime:"15:00",endTime:"18:00",location:"",address:"",mapsLink:"",budget:0,guestLimit:0,cpfRequired:false,showCpf:true,allowCompanions:true,maxCompanions:3,showTasks:true,showFinance:true,primaryColor:"#f05a83",secondaryColor:"#8b60e8",confirmMessage:"Presença confirmada!",declineMessage:"Sentiremos sua falta.",notes:""};
-  state.showerGuests=sg.data||[];state.showerGifts=sf.data||[];state.showerTasks=st.data||[];state.showerGames=sgm.data||[];state.showerFinance=sfi.data||[];state.showerSchedule=ssc.data||[];
+  state.showerGuests=sg.data||[];state.showerGifts=sf.data||[];state.showerTasks=st.data||[];state.showerGames=sgm.data||[];state.showerFinance=sfi.data||[];state.showerSchedule=ssc.data||[];state.documents=docs.data||[];
   render();$("syncText").textContent="Sincronizado";if(manual)toast("Dados atualizados.");
 }
 function subscribe(){
@@ -242,6 +243,10 @@ const pages=[
   {id:"finance",icon:"R$",label:"Financeiro"},
   {id:"gifts",icon:"◇",label:"Presentes"},
   {id:"tasks",icon:"✓",label:"Checklist"},
+  {id:"documents",icon:"▣",label:"Documentos"},
+  {id:"reports",icon:"▤",label:"Relatórios"},
+  {id:"ceremony",icon:"▶",label:"Modo cerimônia"},
+  {id:"assistant",icon:"✦",label:"Assistente"},
   {group:"Chá de Cozinha",groupId:"shower",icon:"🎁"},
   {id:"shower-dashboard",icon:"🎁",label:"Visão geral",sub:true},
   {id:"shower-guests",icon:"👥",label:"Convidados",sub:true},
@@ -271,11 +276,23 @@ function render(){
     b.classList.toggle("open");
     document.querySelectorAll(`#nav [data-nav-parent="${b.dataset.navGroup}"]`).forEach(x=>x.classList.toggle("nav-collapsed",!b.classList.contains("open")));
   });
-  renderBrand();renderDashboard();renderGuests();renderTables();renderFinance();renderGifts();renderTasks();renderShower();renderSettings();
+  renderBrand();renderDashboard();renderGuests();renderTables();renderFinance();renderGifts();renderTasks();renderDocuments();renderReports();renderCeremony();renderAssistant();renderShower();renderSettings();
 }
-function openPage(id,title){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$("pageTitle").textContent=title;$("sidebar").classList.remove("open");window.scrollTo(0,0)}
+function openPage(id,title){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  const target=$(id);if(!target)return;
+  target.classList.add("active");
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+  $("pageTitle").textContent=title;
+  if($("pageContext")){
+    const isShower=id.startsWith("shower-");
+    $("pageContext").innerHTML=`<span>${isShower?"🎁 Chá de Cozinha":"💍 Casamento"}</span><strong>${esc(title||"")}</strong>`;
+  }
+  $("sidebar").classList.remove("open");window.scrollTo(0,0);
+}
 $("menuBtn").onclick=()=>$("sidebar").classList.toggle("open");
-function renderBrand(){const s=state.settings;$("brandTitle").textContent=s.appTitle;$("brandCouple").textContent=s.coupleNames;$("heroCouple").textContent=s.coupleNames;if($("heroSubtitle"))$("heroSubtitle").textContent=s.subtitle;$("brandDate").textContent=dateBR(s.weddingDate)+" • "+s.weddingTime;$("weddingLabel").textContent=new Date(s.weddingDate+"T"+s.weddingTime).toLocaleString("pt-BR",{dateStyle:"long",timeStyle:"short"})}
+function applyTheme(theme){document.body.dataset.theme=theme||"classic"}
+function renderBrand(){const s=state.settings;applyTheme(s.theme||"classic");$("brandTitle").textContent=s.appTitle;$("brandCouple").textContent=s.coupleNames;$("heroCouple").textContent=s.coupleNames;if($("heroSubtitle"))$("heroSubtitle").textContent=s.subtitle;$("brandDate").textContent=dateBR(s.weddingDate)+" • "+s.weddingTime;$("weddingLabel").textContent=new Date(s.weddingDate+"T"+s.weddingTime).toLocaleString("pt-BR",{dateStyle:"long",timeStyle:"short"})}
 function tick(){
   if(!state.settings)return;
   const wedding=new Date(state.settings.weddingDate+"T"+state.settings.weddingTime+":00-03:00");
@@ -295,10 +312,6 @@ function tick(){
   $("journeyPercent").textContent=pct+"% concluído";
   $("journeyBar").style.width=pct+"%";
   const heart=$(".journey-bar i"); if(heart) heart.style.left=`calc(${pct}% - 8px)`;
-  if($("pageContext")){
-    const isShower=id.startsWith("shower-");
-    $("pageContext").innerHTML=`<span>${isShower?"🎁 Chá de Cozinha":"💍 Casamento"}</span><strong>${esc(title||"")}</strong>`;
-  }
 }
 setInterval(tick,1000);
 function renderDashboard(){
@@ -418,7 +431,7 @@ $("addGuestBtn").onclick=()=>guestModal();
 function modal(title,body){$("modalTitle").textContent=title;$("modalBody").innerHTML=body;$("modal").classList.remove("hidden")}
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");$("modal").onclick=e=>{if(e.target===$("modal"))$("modal").classList.add("hidden")};
 window.guestModal=id=>{const g=state.guests.find(x=>x.id===id)||{name:"",side:"Flávio",adults:1,children_0_8:0,children_9_12:0,invitation_status:"Não enviado",rsvp_status:"Pendente",table_name:"",notes:""};state.edit=id;modal(id?"Editar convidado":"Novo convidado",`<div class="form"><label class="full">Nome ou família<input id="gName" value="${esc(g.name)}"></label><label>Lado<select id="gSide">${["Flávio","Nathália","Ambos"].map(x=>`<option ${x===g.side?"selected":""}>${x}</option>`)}</select></label><label>Adultos<input id="gAdults" type="number" min="0" value="${g.adults}"></label><label>0 a 8<input id="g08" type="number" min="0" value="${g.children_0_8}"></label><label>9 a 12<input id="g912" type="number" min="0" value="${g.children_9_12}"></label><label>Convite<select id="gInv">${["Não enviado","Enviado"].map(x=>`<option ${x===g.invitation_status?"selected":""}>${x}</option>`)}</select></label><label>Confirmação<select id="gRsvp">${["Pendente","Confirmado","Recusado"].map(x=>`<option ${x===g.rsvp_status?"selected":""}>${x}</option>`)}</select></label><label>Mesa<select id="gTable"><option value="">Sem mesa</option>${state.tables.map(t=>`<option ${t.name===g.table_name?"selected":""}>${esc(t.name)}</option>`)}</select></label><label class="full">Observações<textarea id="gNotes">${esc(g.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveGuest()">Salvar</button></div>`)};
-window.saveGuest=async()=>{if(!$("gName").value.trim())return toast("Informe o nome ou família.");const obj={name:$("gName").value.trim(),side:$("gSide").value,adults:+$("gAdults").value,children_0_8:+$("g08").value,children_9_12:+$("g912").value,invitation_status:$("gInv").value,rsvp_status:$("gRsvp").value,table_name:$("gTable").value||null,notes:$("gNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("guests").update(obj).eq("id",state.edit):await db.from("guests").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Convidado salvo.")}};
+window.saveGuest=async()=>{if(!$("gName").value.trim())return toast("Informe o nome ou família.");const obj={name:$("gName").value.trim(),side:$("gSide").value,adults:+$("gAdults").value,children_0_8:+$("g08").value,children_9_12:+$("g912").value,invitation_status:$("gInv").value,rsvp_status:$("gRsvp").value,table_name:$("gTable").value||null,notes:$("gNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("guests").update(obj).eq("id",state.edit):await db.from("guests").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Convidado salvo.");await loadAll()}};
 function tableUsage(t){
   if(state.seatsReady)return state.seats.filter(s=>s.table_id===t.id&&s.guest_label).length;
   return state.guests.filter(g=>g.rsvp_status==="Confirmado"&&g.table_name===t.name).reduce((a,g)=>a+seats(g),0);
@@ -443,7 +456,7 @@ function renderTables(){
   $("tableCards").innerHTML=state.tables.map(t=>{
     const cap=Math.max(1,n(t.capacity)),occupied=tableUsage(t),seatEls=Array.from({length:cap},(_,i)=>{
       const num=i+1,pos=seatPosition(i,cap),seat=state.seats.find(s=>s.table_id===t.id&&n(s.seat_number)===num),label=seat?.guest_label||"";
-      return `<button class="seat-point ${label?"occupied":""}" style="left:${pos.left}%;top:${pos.top}%" onclick="seatModal('${t.id}',${num})" title="${label?esc(label):`Lugar ${num} vazio`}"><span>${label?esc(label):"+"}</span><small>${num}</small></button>`;
+      return `<button class="seat-point ${label?"occupied":""}" data-seat-table="${t.id}" data-seat-number="${num}" style="left:${pos.left}%;top:${pos.top}%" onclick="seatModal('${t.id}',${num})" title="${label?esc(label):`Lugar ${num} vazio`}"><span>${label?esc(label):"+"}</span><small>${num}</small></button>`;
     }).join("");
     return `<article class="room-table-card" draggable="true" data-table-id="${t.id}">
       <div class="table-card-head"><button class="drag-handle" title="Arrastar mesa">⋮⋮</button><div><strong>${esc(t.name)}</strong><small>${occupied} de ${cap} lugares</small></div><button class="icon-edit" onclick="tableModal('${t.id}')">Editar</button></div>
@@ -451,6 +464,26 @@ function renderTables(){
     </article>`;
   }).join("")||`<div class="empty-room"><strong>Nenhuma mesa cadastrada.</strong><p>Crie uma mesa ou use o botão “Criar 15 mesas”.</p></div>`;
   enableTableDrag();
+  if($("unassignedGuestTray")){
+    const assigned=new Set(state.seats.filter(x=>x.guest_id).map(x=>`${x.guest_id}|${x.guest_index||1}`));
+    const opts=guestSeatOptions().filter(x=>!assigned.has(x.key));
+    $("unassignedGuestTray").innerHTML=opts.length?opts.map(x=>`<button class="drag-guest" draggable="true" data-guest-key="${x.key}" data-guest-label="${esc(x.label)}"><span>${esc(x.label)}</span><small>${esc(x.status)}</small></button>`).join(""):`<span class="empty-note">Todos já possuem lugar.</span>`;
+    document.querySelectorAll(".drag-guest").forEach(el=>el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/guest-key",el.dataset.guestKey);e.dataTransfer.setData("text/guest-label",el.dataset.guestLabel)}));
+    document.querySelectorAll(".seat-point").forEach(seat=>{
+      seat.addEventListener("dragover",e=>{e.preventDefault();seat.classList.add("drop-ready")});
+      seat.addEventListener("dragleave",()=>seat.classList.remove("drop-ready"));
+      seat.addEventListener("drop",async e=>{
+        e.preventDefault();seat.classList.remove("drop-ready");
+        const key=e.dataTransfer.getData("text/guest-key"),label=e.dataTransfer.getData("text/guest-label");if(!key||!state.seatsReady)return;
+        const [guest_id,guest_index]=key.split("|"),table_id=seat.dataset.seatTable,seat_number=+seat.dataset.seatNumber;
+        const occupied=state.seats.find(x=>x.table_id===table_id&&n(x.seat_number)===seat_number&&x.guest_label);
+        if(occupied&&!confirm(`Substituir ${occupied.guest_label}?`))return;
+        const existing=state.seats.find(x=>`${x.guest_id}|${x.guest_index||1}`===key);if(existing)await db.from("table_seats").delete().eq("id",existing.id);
+        const {error}=await db.from("table_seats").upsert({table_id,seat_number,guest_id,guest_index:+guest_index,guest_label:label},{onConflict:"table_id,seat_number"});
+        if(error)alert(error.message);else{toast(`${label} foi colocado na mesa.`);await loadAll()}
+      });
+    });
+  }
 }
 function enableTableDrag(){
   let dragged=null;
@@ -548,6 +581,27 @@ window.taskModal=id=>{const x=state.tasks.find(t=>t.id===id)||{title:"",due_date
 window.saveTask=async()=>{const title=$("cTitle").value.trim();if(!title)return toast("Informe a tarefa.");const obj={title,due_date:$("cDue").value||null,priority:$("cPriority").value,notes:$("cNotes").value.trim()};const r=state.edit?await db.from("tasks").update(obj).eq("id",state.edit):await db.from("tasks").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast(state.edit?"Tarefa atualizada.":"Tarefa adicionada.")}};
 window.toggleTask=async(id,v)=>{const {error}=await db.from("tasks").update({completed:v}).eq("id",id);if(error)alert(error.message);else toast(v?"Tarefa concluída.":"Tarefa reaberta.")};
 window.removeRow=async(table,id)=>{if(confirm("Excluir este item? Essa ação não pode ser desfeita.")){const {error}=await db.from(table).delete().eq("id",id);if(error)alert(error.message);else toast("Item excluído.")}};
+
+function renderDocuments(){
+  if(!$("documentGrid"))return;const q=($("documentSearch")?.value||"").toLowerCase(),cat=$("documentCategory")?.value||"";
+  const rows=state.documents.filter(x=>(`${x.title} ${x.provider||""}`).toLowerCase().includes(q)&&(!cat||x.category===cat));
+  $("documentSummary").innerHTML=`<span class="summary-pill">Total <strong>${rows.length}</strong></span><span class="summary-pill">Contratos <strong>${rows.filter(x=>x.category==="Contrato").length}</strong></span>`;
+  $("documentGrid").innerHTML=rows.map(x=>`<article class="card document-card"><div class="document-icon">▣</div><div><span class="badge neutral">${esc(x.category)}</span><h4>${esc(x.title)}</h4><p>${esc(x.provider||"")}</p><small>${esc(x.notes||"")}</small></div><div class="document-actions">${x.url?`<a class="secondary button-link" href="${esc(x.url)}" target="_blank">Abrir</a>`:""}<button class="secondary" onclick="documentModal('${x.id}')">Editar</button><button class="danger" onclick="removeRow('documents','${x.id}')">Excluir</button></div></article>`).join("")||`<div class="card empty-room"><strong>Nenhum documento cadastrado.</strong></div>`;
+}
+window.documentModal=id=>{const x=state.documents.find(v=>v.id===id)||{title:"",category:"Contrato",provider:"",url:"",notes:""};state.edit=id;modal(id?"Editar documento":"Novo documento",`<div class="form"><label class="full">Título<input id="docTitle" value="${esc(x.title)}"></label><label>Categoria<select id="docCat">${["Contrato","Comprovante","Orçamento","Lista","Outro"].map(v=>`<option ${v===x.category?"selected":""}>${v}</option>`)}</select></label><label>Fornecedor<input id="docProvider" value="${esc(x.provider||"")}"></label><label class="full">Link<input id="docUrl" value="${esc(x.url||"")}"></label><label class="full">Observações<textarea id="docNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveDocument()">Salvar</button></div>`)};
+window.saveDocument=async()=>{if(!$("docTitle").value.trim())return toast("Informe o título.");const obj={title:$("docTitle").value.trim(),category:$("docCat").value,provider:$("docProvider").value.trim(),url:$("docUrl").value.trim(),notes:$("docNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("documents").update(obj).eq("id",state.edit):await db.from("documents").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");await loadAll()}};
+function renderReports(){}
+function pdfDoc(title,subtitle){const {jsPDF}=window.jspdf||{};if(!jsPDF)return null;const d=new jsPDF({unit:"mm",format:"a4"});d.setFont("helvetica","bold");d.setFontSize(17);d.text(title,15,18);d.setFont("helvetica","normal");d.setFontSize(10);d.text(subtitle,15,25);d.line(15,30,195,30);return d}
+function savePdf(doc,lines,name){let y=39;lines.forEach(line=>{const w=doc.splitTextToSize(String(line),178);if(y+w.length*5>282){doc.addPage();y=18}doc.text(w,16,y);y+=w.length*5+2});doc.save(name)}
+function reportWeddingGuests(){const d=pdfDoc("Nahvio • Convidados","Resumo do casamento");if(!d)return;savePdf(d,state.guests.map(g=>`${g.name} • ${g.rsvp_status} • ${people(g)} pessoa(s) • ${g.table_name||"Sem mesa"}`),"nahvio_convidados.pdf")}
+function reportFinance(){const d=pdfDoc("Nahvio • Financeiro","Resumo de pagamentos");if(!d)return;const p=state.finance.reduce((a,x)=>a+n(x.planned),0),pg=state.finance.reduce((a,x)=>a+n(x.paid),0);savePdf(d,[`Previsto: ${money(p)}`,`Pago: ${money(pg)}`,`Restante: ${money(p-pg)}`,"",...state.finance.map(x=>`${x.description} • ${money(x.paid)} pago`)],"nahvio_financeiro.pdf")}
+function reportPending(){const d=pdfDoc("Nahvio • Pendências","Itens que precisam de atenção");if(!d)return;const today=new Date().toISOString().slice(0,10),l=[];state.guests.filter(x=>x.rsvp_status==="Pendente").forEach(x=>l.push(`Convidado pendente: ${x.name}`));state.tasks.filter(x=>!x.completed&&x.due_date&&x.due_date<today).forEach(x=>l.push(`Tarefa atrasada: ${x.title}`));state.tables.filter(x=>tableUsage(x)===0).forEach(x=>l.push(`Mesa vazia: ${x.name}`));savePdf(d,l.length?l:["Nenhuma pendência."],"nahvio_pendencias.pdf")}
+function reportShower(){const d=pdfDoc("Nahvio • Chá de Cozinha",`${dateBR(state.showerSettings.eventDate)} às ${state.showerSettings.eventTime}`);if(!d)return;savePdf(d,[`Cadastros: ${state.showerGuests.length}`,`Confirmados: ${state.showerGuests.filter(x=>x.rsvp_status==="Confirmado").length}`,"",...state.showerGames.map(x=>`${x.position_index}. ${x.title} • ${x.status}`)],"nahvio_cha.pdf")}
+function renderCeremony(){if(!$("ceremonyChecklist"))return;$("ceremonyChecklist").innerHTML=state.tasks.filter(x=>!x.completed).slice(0,8).map(x=>`<label><input type="checkbox"><span>${esc(x.title)}</span></label>`).join("")||`<p class="empty-note">Nenhuma tarefa pendente.</p>`;updateCeremony()}
+function updateCeremony(){if(!$("ceremonyTime"))return;const now=new Date();$("ceremonyDate").textContent=now.toLocaleDateString("pt-BR",{dateStyle:"full"});$("ceremonyTime").textContent=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});const wt=state.settings?.weddingTime||"16:30",mins=now.getHours()*60+now.getMinutes(),base=[{time:wt,title:"Cerimônia",notes:"Início da cerimônia"},{time:"17:30",title:"Fotos",notes:"Fotos com familiares"},{time:"18:30",title:"Recepção",notes:"Recepção dos convidados"},{time:"20:00",title:"Jantar",notes:"Serviço principal"}].map(x=>({...x,min:+x.time.split(":")[0]*60 + +x.time.split(":")[1]}));const cur=[...base].reverse().find(x=>x.min<=mins),next=base.find(x=>x.min>mins);$("ceremonyNowTitle").textContent=cur?.title||"Preparação";$("ceremonyNowNotes").textContent=cur?.notes||"Aguardando o início.";$("ceremonyNextTitle").textContent=next?.title||"Encerramento";$("ceremonyNextNotes").textContent=next?`${next.time} • ${next.notes}`:"Sem próxima etapa.";const wedding=new Date(`${state.settings.weddingDate}T${wt}:00-03:00`);$("ceremonyCountdown").textContent=wedding>now?`Faltam ${Math.ceil((wedding-now)/86400000)} dias`:"Evento em andamento ou concluído"}
+function renderAssistant(){}
+function answerAssistant(){const q=($("assistantQuestion").value||"").toLowerCase();let a;if(q.includes("não responder")||q.includes("pendente")&&q.includes("convid")){const r=state.guests.filter(x=>x.rsvp_status==="Pendente");a=`Há ${r.length} convite(s) pendente(s): ${r.slice(0,8).map(x=>x.name).join(", ")}.`}else if(q.includes("falta pagar")||q.includes("restante")){const p=state.finance.reduce((s,x)=>s+n(x.planned),0),pg=state.finance.reduce((s,x)=>s+n(x.paid),0);a=`Ainda falta pagar ${money(Math.max(0,p-pg))}.`}else if(q.includes("mesa")&&q.includes("vazia")){const r=state.tables.filter(x=>tableUsage(x)===0);a=r.length?`Mesas vazias: ${r.map(x=>x.name).join(", ")}.`:"Não há mesas vazias."}else if(q.includes("tarefa")&&q.includes("atras")){const t=new Date().toISOString().slice(0,10),r=state.tasks.filter(x=>!x.completed&&x.due_date&&x.due_date<t);a=r.length?`Tarefas atrasadas: ${r.map(x=>x.title).join(", ")}.`:"Não há tarefas atrasadas."}else if(q.includes("chá")&&q.includes("convid"))a=`O chá tem ${state.showerGuests.length} cadastros e ${state.showerGuests.filter(x=>x.rsvp_status==="Confirmado").length} confirmados.`;else a="Posso responder sobre convidados pendentes, valor restante, mesas vazias, tarefas atrasadas e convidados do chá.";$("assistantAnswer").textContent=a}
+
 function renderSettings(){const s=state.settings;$("sAppTitle").value=s.appTitle;$("sCoupleNames").value=s.coupleNames;$("sDate").value=s.weddingDate;$("sTime").value=s.weddingTime;$("sSubtitle").value=s.subtitle;$("sGuestLimit").value=s.guestLimit;$("sCapacity").value=s.defaultTableCapacity;$("sAdultWeight").value=s.adultWeight;$("sChild08Weight").value=s.child08Weight;$("sChild912Weight").value=s.child912Weight;$("sAdultSeat").value=String(s.adultSeat);$("sChild08Seat").value=String(s.child08Seat);$("sChild912Seat").value=String(s.child912Seat)}
 $("saveSettingsBtn").onclick=async()=>{const value={appTitle:$("sAppTitle").value,coupleNames:$("sCoupleNames").value,weddingDate:$("sDate").value,weddingTime:$("sTime").value,subtitle:$("sSubtitle").value,guestLimit:+$("sGuestLimit").value,defaultTableCapacity:+$("sCapacity").value,adultWeight:+$("sAdultWeight").value,child08Weight:+$("sChild08Weight").value,child912Weight:+$("sChild912Weight").value,adultSeat:$("sAdultSeat").value==="true",child08Seat:$("sChild08Seat").value==="true",child912Seat:$("sChild912Seat").value==="true"};const {error}=await db.from("settings").update({value,updated_at:new Date().toISOString()}).eq("key","general");error?alert(error.message):toast("Configurações salvas.")};
 function csv(name,headers,rows){const text="\ufeff"+[headers,...rows].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
@@ -636,7 +690,7 @@ window.importWeddingGuests=async()=>{
   const existing=new Set(state.showerGuests.map(x=>x.full_name.toLowerCase()));
   const rows=state.guests.filter(g=>ids.includes(g.id)&&!existing.has(g.name.toLowerCase())).map(g=>({full_name:g.name,cpf:null,phone:"",companions:Math.max(0,people(g)-1),rsvp_status:g.rsvp_status==="Recusado"?"Pendente":g.rsvp_status,notes:"Importado da lista do casamento"}));
   if(!rows.length)return toast("Os selecionados já foram importados.");
-  const {error}=await db.from("shower_guests").insert(rows);if(error)alert(error.message);else{$("modal").classList.add("hidden");toast(`${rows.length} convidado(s) importado(s).`)}
+  const {error}=await db.from("shower_guests").insert(rows);if(error)alert(error.message);else{$("modal").classList.add("hidden");toast(`${rows.length} convidado(s) importado(s).`);await loadAll()}
 };
 if($("saveShowerSettingsBtn"))$("saveShowerSettingsBtn").onclick=async()=>{
   const value={eventName:$("shName").value.trim()||"Chá de Cozinha",menuLabel:$("shMenuLabel").value.trim()||"Chá de Cozinha",eventIcon:$("shEventIcon").value.trim()||"🎁",eventDate:$("shDate").value,eventTime:$("shTime").value,endTime:$("shEndTime").value,location:$("shLocation").value.trim(),address:$("shAddress").value.trim(),mapsLink:$("shMaps").value.trim(),budget:+$("shBudget").value,guestLimit:+$("shGuestLimit").value,cpfRequired:$("shCpfRequired").value==="true",showCpf:$("shShowCpf").value==="true",allowCompanions:$("shAllowCompanions").value==="true",maxCompanions:+$("shMaxCompanions").value,showTasks:$("shShowTasks").value==="true",showFinance:$("shShowFinance").value==="true",primaryColor:$("shPrimaryColor").value,secondaryColor:$("shSecondaryColor").value,confirmMessage:$("shConfirmMessage").value,declineMessage:$("shDeclineMessage").value,notes:$("shNotes").value};
@@ -651,3 +705,17 @@ if($("sidebarOverlay"))$("sidebarOverlay").onclick=()=>document.body.classList.r
 document.addEventListener("click",e=>{
   if(e.target.closest("#nav [data-page]")&&window.innerWidth<=900)document.body.classList.remove("sidebar-open");
 });
+
+
+document.addEventListener("click",e=>{const b=e.target.closest("[data-alert-page]");if(b){const p=pages.find(x=>x.id===b.dataset.alertPage);openPage(b.dataset.alertPage,p?.label||"Página")}});
+["documentSearch","documentCategory"].forEach(id=>{if($(id))$(id).oninput=renderDocuments});
+if($("addDocumentBtn"))$("addDocumentBtn").onclick=()=>documentModal();
+if($("reportWeddingGuestsBtn"))$("reportWeddingGuestsBtn").onclick=reportWeddingGuests;
+if($("reportFinanceBtn"))$("reportFinanceBtn").onclick=reportFinance;
+if($("reportPendingBtn"))$("reportPendingBtn").onclick=reportPending;
+if($("reportShowerBtn"))$("reportShowerBtn").onclick=reportShower;
+if($("assistantAskBtn"))$("assistantAskBtn").onclick=answerAssistant;
+if($("assistantQuestion"))$("assistantQuestion").onkeydown=e=>{if(e.key==="Enter")answerAssistant()};
+document.querySelectorAll("[data-assistant-question]").forEach(b=>b.onclick=()=>{$("assistantQuestion").value=b.dataset.assistantQuestion;answerAssistant()});
+if($("ceremonyFullscreenBtn"))$("ceremonyFullscreenBtn").onclick=()=>document.body.classList.toggle("ceremony-display");
+setInterval(updateCeremony,30000);

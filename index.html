@@ -371,6 +371,31 @@
         </div>
       </section>
 
+
+      <section id="documents" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Organização</span><h3>Documentos</h3><p>Centralize contratos, comprovantes, orçamentos e links importantes.</p></div><button id="addDocumentBtn" class="primary">+ Novo documento</button></div>
+        <div class="toolbar"><input id="documentSearch" class="search" placeholder="Pesquisar documento ou fornecedor"><select id="documentCategory"><option value="">Todas as categorias</option><option>Contrato</option><option>Comprovante</option><option>Orçamento</option><option>Lista</option><option>Outro</option></select></div>
+        <div id="documentSummary" class="summary-strip"></div><div id="documentGrid" class="document-grid"></div>
+      </section>
+      <section id="reports" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Resumo</span><h3>Relatórios</h3><p>Gere PDFs para conferência e compartilhamento.</p></div></div>
+        <div class="report-grid">
+          <article class="card report-card"><span>👥</span><h4>Convidados</h4><p>Status e mesas.</p><button class="primary" id="reportWeddingGuestsBtn">Gerar PDF</button></article>
+          <article class="card report-card"><span>💰</span><h4>Financeiro</h4><p>Previsto, pago e restante.</p><button class="primary" id="reportFinanceBtn">Gerar PDF</button></article>
+          <article class="card report-card"><span>✓</span><h4>Pendências</h4><p>Tarefas, respostas e mesas.</p><button class="primary" id="reportPendingBtn">Gerar PDF</button></article>
+          <article class="card report-card"><span>🎁</span><h4>Chá de Cozinha</h4><p>Convidados e brincadeiras.</p><button class="primary" id="reportShowerBtn">Gerar PDF</button></article>
+        </div>
+      </section>
+      <section id="ceremony" class="page ceremony-page">
+        <div class="page-intro"><div><span class="eyebrow">Dia do casamento</span><h3>Modo cerimônia</h3><p>Acompanhe o momento atual e a próxima etapa.</p></div><button id="ceremonyFullscreenBtn" class="secondary">Modo de exibição</button></div>
+        <div class="ceremony-clock card"><span id="ceremonyDate"></span><strong id="ceremonyTime">00:00</strong><small id="ceremonyCountdown"></small></div>
+        <div class="ceremony-grid"><article class="card now-card"><span class="eyebrow">Agora</span><h3 id="ceremonyNowTitle">Preparação</h3><p id="ceremonyNowNotes"></p></article><article class="card next-card"><span class="eyebrow">Próximo</span><h3 id="ceremonyNextTitle">Cerimônia</h3><p id="ceremonyNextNotes"></p></article></div>
+        <div class="card"><div class="panel-title"><span>Checklist rápido</span></div><div id="ceremonyChecklist" class="ceremony-checklist"></div></div>
+      </section>
+      <section id="assistant" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Consulta rápida</span><h3>Pergunte ao Nahvio</h3><p>Perguntas simples sobre convidados, mesas, pagamentos e tarefas.</p></div></div>
+        <div class="card assistant-box"><div class="assistant-examples"><button data-assistant-question="Quantos convidados ainda não responderam?">Convidados pendentes</button><button data-assistant-question="Quanto ainda falta pagar?">Valor restante</button><button data-assistant-question="Quais mesas estão vazias?">Mesas vazias</button><button data-assistant-question="Quais tarefas estão atrasadas?">Tarefas atrasadas</button></div><div class="assistant-input-row"><input id="assistantQuestion" placeholder="Digite sua pergunta"><button id="assistantAskBtn" class="primary">Perguntar</button></div><div id="assistantAnswer" class="assistant-answer">Digite uma pergunta ou use um atalho.</div></div>
+      </section>
       <section id="settings" class="page">
         <div class="card">
           <span class="eyebrow">Personalização</span><h3>Configurações gerais</h3>

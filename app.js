@@ -50,9 +50,9 @@ function renderShower(){
   const planned=state.showerFinance.reduce((a,x)=>a+n(x.planned),0),paid=state.showerFinance.reduce((a,x)=>a+n(x.paid),0);
   $("showerKFinance").textContent=money(Math.max(0,planned-paid));$("showerKFinanceStatus").textContent=`${money(paid)} pagos`;
   const nextTasks=state.showerTasks.filter(x=>!x.completed).slice(0,4);
-  $("showerNextTasks").innerHTML=nextTasks.length?nextTasks.map(x=>`<div><span>○ ${esc(x.title)}</span><strong>${x.due_date?dateBR(x.due_date):"Sem data"}</strong></div>`).join(""):`<p class="empty-note">Nenhuma tarefa pendente.</p>`;
+  $("showerNextTasks").closest(".premium-panel").classList.toggle("panel-empty",!nextTasks.length);$("showerNextTasks").innerHTML=nextTasks.length?nextTasks.map(x=>`<div><span>○ ${esc(x.title)}</span><strong>${x.due_date?dateBR(x.due_date):"Sem data"}</strong></div>`).join(""):`<p class="empty-note">Nenhuma tarefa pendente.</p>`;
   $("showerGameBreakdown").innerHTML=`<div><span>Planejadas</span><strong>${state.showerGames.filter(x=>x.status==="Planejada").length}</strong></div><div><span>Preparadas</span><strong>${state.showerGames.filter(x=>x.status==="Preparada").length}</strong></div><div><span>Realizadas</span><strong>${state.showerGames.filter(x=>x.status==="Realizada").length}</strong></div>`;
-  $("showerNextSchedule").innerHTML=state.showerSchedule.slice(0,4).map(x=>`<div><span>${esc(x.title)}</span><strong>${esc(x.time||"")}</strong></div>`).join("")||`<p class="empty-note">Nenhuma etapa cadastrada.</p>`;
+  $("showerNextSchedule").closest(".premium-panel").classList.toggle("panel-empty",!state.showerSchedule.length);$("showerNextSchedule").innerHTML=state.showerSchedule.slice(0,4).map(x=>`<div><span>${esc(x.title)}</span><strong>${esc(x.time||"")}</strong></div>`).join("")||`<p class="empty-note">Nenhuma etapa cadastrada.</p>`;
   renderShowerGuests();renderShowerGifts();renderShowerTasks();renderShowerGames();renderShowerFinance();renderShowerSchedule();renderShowerSettings();
 }
 function renderShowerGuests(){
@@ -172,7 +172,7 @@ window.saveShowerFinance=async()=>{if(!$("shfDesc").value.trim())return toast("I
 function renderShowerSchedule(){$("showerScheduleList").innerHTML=state.showerSchedule.map(x=>`<article class="card schedule-item"><div class="schedule-time">${esc(x.time||"--:--")}</div><div><strong>${esc(x.title)}</strong><p>${esc(x.notes||"")}</p></div><div><button class="secondary" onclick="showerScheduleModal('${x.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_schedule','${x.id}')">Excluir</button></div></article>`).join("")||`<div class="card empty-room"><strong>Nenhuma etapa cadastrada</strong><span>Adicione os horários e atividades do chá.</span></div>`}
 window.showerScheduleModal=id=>{const x=state.showerSchedule.find(v=>v.id===id)||{time:"14:00",title:"",notes:"",position_index:state.showerSchedule.length+1};state.edit=id;modal(id?"Editar etapa":"Nova etapa",`<div class="form"><label>Horário<input id="shsTime" type="time" value="${x.time||""}"></label><label>Ordem<input id="shsPos" type="number" min="1" value="${n(x.position_index)||1}"></label><label class="full">Atividade<input id="shsTitle" value="${esc(x.title)}"></label><label class="full">Observações<textarea id="shsNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerSchedule()">Salvar etapa</button></div>`)};
 window.saveShowerSchedule=async()=>{if(!$("shsTitle").value.trim())return toast("Informe a atividade.");const obj={time:$("shsTime").value,title:$("shsTitle").value.trim(),notes:$("shsNotes").value,position_index:+$("shsPos").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_schedule").update(obj).eq("id",state.edit):await db.from("shower_schedule").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Etapa salva.")}};
-function renderShowerSettings(){const s=state.showerSettings||{};const map={shName:s.eventName,shDate:s.eventDate,shTime:s.eventTime,shEndTime:s.endTime,shLocation:s.location,shAddress:s.address,shMaps:s.mapsLink,shBudget:s.budget,shGuestLimit:s.guestLimit,shMaxCompanions:s.maxCompanions,shPrimaryColor:s.primaryColor,shSecondaryColor:s.secondaryColor,shConfirmMessage:s.confirmMessage,shDeclineMessage:s.declineMessage,shNotes:s.notes};Object.entries(map).forEach(([id,v])=>{if($(id))$(id).value=v??""});$("shCpfRequired").value=String(!!s.cpfRequired);$("shShowCpf").value=String(s.showCpf!==false);$("shAllowCompanions").value=String(s.allowCompanions!==false);$("shShowTasks").value=String(s.showTasks!==false);$("shShowFinance").value=String(s.showFinance!==false)}
+function renderShowerSettings(){const s=state.showerSettings||{};const map={shName:s.eventName,shMenuLabel:s.menuLabel||"Chá de Cozinha",shEventIcon:s.eventIcon||"🎁",shDate:s.eventDate,shTime:s.eventTime,shEndTime:s.endTime,shLocation:s.location,shAddress:s.address,shMaps:s.mapsLink,shBudget:s.budget,shGuestLimit:s.guestLimit,shMaxCompanions:s.maxCompanions,shPrimaryColor:s.primaryColor,shSecondaryColor:s.secondaryColor,shConfirmMessage:s.confirmMessage,shDeclineMessage:s.declineMessage,shNotes:s.notes};Object.entries(map).forEach(([id,v])=>{if($(id))$(id).value=v??""});$("shCpfRequired").value=String(!!s.cpfRequired);$("shShowCpf").value=String(s.showCpf!==false);$("shAllowCompanions").value=String(s.allowCompanions!==false);$("shShowTasks").value=String(s.showTasks!==false);$("shShowFinance").value=String(s.showFinance!==false)}
 function exportShowerPDF(){
   const confirmed=state.showerGuests.filter(x=>x.rsvp_status==="Confirmado").sort((a,b)=>a.full_name.localeCompare(b.full_name,"pt-BR"));
   if(!confirmed.length)return toast("Não há convidados confirmados.");
@@ -227,7 +227,7 @@ async function loadAll(manual=false){
   ]);
   if(s.error){alert("Erro ao carregar configurações: "+s.error.message);return}
   state.settings=s.data.value;state.guests=g.data||[];state.tables=(t.data||[]).sort((a,b)=>n(a.position_index)-n(b.position_index)||String(a.name).localeCompare(String(b.name),"pt-BR",{numeric:true}));state.seatsReady=!z.error;state.seats=z.data||[];state.finance=f.data||[];state.gifts=p.data||[];state.tasks=c.data||[];
-  state.showerSettings=ss.data?.value||{eventName:"Chá de Cozinha",eventDate:"",eventTime:"14:00",endTime:"18:00",location:"",address:"",mapsLink:"",budget:0,guestLimit:0,cpfRequired:false,showCpf:true,allowCompanions:true,maxCompanions:3,showTasks:true,showFinance:true,primaryColor:"#f05a83",secondaryColor:"#8b60e8",confirmMessage:"Presença confirmada!",declineMessage:"Sentiremos sua falta.",notes:""};
+  state.showerSettings=ss.data?.value||{eventName:"Chá de Cozinha",menuLabel:"Chá de Cozinha",eventIcon:"🎁",eventDate:"2026-08-08",eventTime:"15:00",endTime:"18:00",location:"",address:"",mapsLink:"",budget:0,guestLimit:0,cpfRequired:false,showCpf:true,allowCompanions:true,maxCompanions:3,showTasks:true,showFinance:true,primaryColor:"#f05a83",secondaryColor:"#8b60e8",confirmMessage:"Presença confirmada!",declineMessage:"Sentiremos sua falta.",notes:""};
   state.showerGuests=sg.data||[];state.showerGifts=sf.data||[];state.showerTasks=st.data||[];state.showerGames=sgm.data||[];state.showerFinance=sfi.data||[];state.showerSchedule=ssc.data||[];
   render();$("syncText").textContent="Sincronizado";if(manual)toast("Dados atualizados.");
 }
@@ -242,7 +242,7 @@ const pages=[
   {id:"finance",icon:"R$",label:"Financeiro"},
   {id:"gifts",icon:"◇",label:"Presentes"},
   {id:"tasks",icon:"✓",label:"Checklist"},
-  {group:"Chá de Cozinha"},
+  {group:"Chá de Cozinha",groupId:"shower",icon:"🎁"},
   {id:"shower-dashboard",icon:"🎁",label:"Visão geral",sub:true},
   {id:"shower-guests",icon:"👥",label:"Convidados",sub:true},
   {id:"shower-gifts",icon:"◇",label:"Presentes",sub:true},
@@ -251,15 +251,26 @@ const pages=[
   {id:"shower-schedule",icon:"◷",label:"Cronograma",sub:true},
   {id:"shower-finance",icon:"R$",label:"Financeiro",sub:true},
   {id:"shower-settings",icon:"⚙",label:"Configurações",sub:true},
-  {group:"Casamento"},
+  {group:"Casamento",groupId:"wedding",icon:"💍"},
   {id:"settings",icon:"⚙",label:"Configurações"}
 ];
 function render(){
-  $("nav").innerHTML=pages.map((p,i)=>p.group
-    ?`<div class="nav-group">${p.group}</div>`
-    :`<button class="${p.id==="dashboard"?"active":""} ${p.sub?"nav-sub":""}" data-page="${p.id}" data-title="${p.label}"><span>${p.icon}</span>${p.label}</button>`
-  ).join("");
-  document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.dataset.title));
+  $("nav").innerHTML=pages.map((p,i)=>{
+    if(p.group){
+      const open=p.groupId==="shower"||p.groupId==="wedding";
+      return `<button class="nav-group-toggle ${open?"open":""}" data-nav-group="${p.groupId}">
+        <span class="nav-group-label"><span>${p.icon||""}</span>${p.group}</span>
+        <span class="nav-chevron">⌄</span>
+      </button>`;
+    }
+    const parent=p.sub?"shower":"wedding";
+    return `<button class="${p.id==="dashboard"?"active":""} ${p.sub?"nav-sub":""}" data-nav-parent="${parent}" data-page="${p.id}" data-title="${p.label}"><span>${p.icon}</span>${p.label}</button>`;
+  }).join("");
+  document.querySelectorAll("#nav [data-page]").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.dataset.title));
+  document.querySelectorAll("#nav [data-nav-group]").forEach(b=>b.onclick=()=>{
+    b.classList.toggle("open");
+    document.querySelectorAll(`#nav [data-nav-parent="${b.dataset.navGroup}"]`).forEach(x=>x.classList.toggle("nav-collapsed",!b.classList.contains("open")));
+  });
   renderBrand();renderDashboard();renderGuests();renderTables();renderFinance();renderGifts();renderTasks();renderShower();renderSettings();
 }
 function openPage(id,title){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$("pageTitle").textContent=title;$("sidebar").classList.remove("open");window.scrollTo(0,0)}
@@ -284,6 +295,10 @@ function tick(){
   $("journeyPercent").textContent=pct+"% concluído";
   $("journeyBar").style.width=pct+"%";
   const heart=$(".journey-bar i"); if(heart) heart.style.left=`calc(${pct}% - 8px)`;
+  if($("pageContext")){
+    const isShower=id.startsWith("shower-");
+    $("pageContext").innerHTML=`<span>${isShower?"🎁 Chá de Cozinha":"💍 Casamento"}</span><strong>${esc(title||"")}</strong>`;
+  }
 }
 setInterval(tick,1000);
 function renderDashboard(){
@@ -574,6 +589,15 @@ window.importWeddingGuests=async()=>{
   const {error}=await db.from("shower_guests").insert(rows);if(error)alert(error.message);else{$("modal").classList.add("hidden");toast(`${rows.length} convidado(s) importado(s).`)}
 };
 if($("saveShowerSettingsBtn"))$("saveShowerSettingsBtn").onclick=async()=>{
-  const value={eventName:$("shName").value.trim()||"Chá de Cozinha",eventDate:$("shDate").value,eventTime:$("shTime").value,endTime:$("shEndTime").value,location:$("shLocation").value.trim(),address:$("shAddress").value.trim(),mapsLink:$("shMaps").value.trim(),budget:+$("shBudget").value,guestLimit:+$("shGuestLimit").value,cpfRequired:$("shCpfRequired").value==="true",showCpf:$("shShowCpf").value==="true",allowCompanions:$("shAllowCompanions").value==="true",maxCompanions:+$("shMaxCompanions").value,showTasks:$("shShowTasks").value==="true",showFinance:$("shShowFinance").value==="true",primaryColor:$("shPrimaryColor").value,secondaryColor:$("shSecondaryColor").value,confirmMessage:$("shConfirmMessage").value,declineMessage:$("shDeclineMessage").value,notes:$("shNotes").value};
+  const value={eventName:$("shName").value.trim()||"Chá de Cozinha",menuLabel:$("shMenuLabel").value.trim()||"Chá de Cozinha",eventIcon:$("shEventIcon").value.trim()||"🎁",eventDate:$("shDate").value,eventTime:$("shTime").value,endTime:$("shEndTime").value,location:$("shLocation").value.trim(),address:$("shAddress").value.trim(),mapsLink:$("shMaps").value.trim(),budget:+$("shBudget").value,guestLimit:+$("shGuestLimit").value,cpfRequired:$("shCpfRequired").value==="true",showCpf:$("shShowCpf").value==="true",allowCompanions:$("shAllowCompanions").value==="true",maxCompanions:+$("shMaxCompanions").value,showTasks:$("shShowTasks").value==="true",showFinance:$("shShowFinance").value==="true",primaryColor:$("shPrimaryColor").value,secondaryColor:$("shSecondaryColor").value,confirmMessage:$("shConfirmMessage").value,declineMessage:$("shDeclineMessage").value,notes:$("shNotes").value};
   const {error}=await db.from("shower_settings").upsert({key:"general",value,updated_at:new Date().toISOString()},{onConflict:"key"});error?alert(error.message):toast("Configurações do chá salvas.");
 };
+
+
+if($("mobileMenuBtn"))$("mobileMenuBtn").onclick=()=>{
+  document.body.classList.toggle("sidebar-open");
+};
+if($("sidebarOverlay"))$("sidebarOverlay").onclick=()=>document.body.classList.remove("sidebar-open");
+document.addEventListener("click",e=>{
+  if(e.target.closest("#nav [data-page]")&&window.innerWidth<=900)document.body.classList.remove("sidebar-open");
+});

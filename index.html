@@ -48,6 +48,7 @@
         <span class="sync-dot"></span><span id="syncText">Sincronizado</span>
       </div>
     </aside>
+      <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <main>
       <header class="top">
@@ -342,6 +343,10 @@
         <div class="card">
           <div class="settings-grid">
             <label>Nome do evento<input id="shName"></label>
+
+            <label>Nome curto no menu<input id="shMenuLabel" placeholder="Chá de Cozinha"></label>
+            <label>Ícone do evento<input id="shEventIcon" maxlength="4" placeholder="🎁"></label>
+
             <label>Data<input id="shDate" type="date"></label>
             <label>Horário<input id="shTime" type="time"></label>
             <label>Horário de término<input id="shEndTime" type="time"></label>

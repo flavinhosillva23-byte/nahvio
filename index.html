@@ -183,18 +183,27 @@
         <div id="guestSummary" class="summary-strip"></div>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Nome ou família</th><th>Lado</th><th>Adultos</th><th>0 a 8</th><th>9 a 12</th><th>Conta</th><th>Assentos</th><th>Convite</th><th>Confirmação</th><th>Mesa</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Nome ou família</th><th>Lado</th><th>Adultos</th><th>0 a 8</th><th>9 a 12</th><th>Equivalência em adultos</th><th>Lugares</th><th>Convite</th><th>Confirmação</th><th>Mesa</th><th>Ações</th></tr></thead>
             <tbody id="guestRows"></tbody>
           </table>
         </div>
       </section>
 
-      <section id="tables" class="page">
-        <div class="toolbar"><div class="muted">Visualize ocupação e lotação rapidamente.</div><button id="addTableBtn" class="primary">+ Nova mesa</button></div>
-        <div id="tableCards" class="table-cards"></div>
-        <div class="card table-wrap">
-          <table><thead><tr><th>Mesa</th><th>Capacidade</th><th>Ocupados</th><th>Disponíveis</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="tableRows"></tbody></table>
+      <section id="tables" class="page tables-page">
+        <div class="tables-toolbar card">
+          <div>
+            <span class="eyebrow">Mapa do salão</span>
+            <h3>Organização das mesas</h3>
+            <p class="muted">Clique em cada lugar para escolher uma pessoa. Arraste as mesas para mudar a ordem no mapa.</p>
+          </div>
+          <div class="table-actions">
+            <button id="create15TablesBtn" class="secondary">Criar 15 mesas</button>
+            <button id="addTableBtn" class="primary">+ Nova mesa</button>
+          </div>
         </div>
+        <div id="tablesSetupNotice" class="notice hidden"></div>
+        <div id="tableMapSummary" class="summary-strip"></div>
+        <div id="tableCards" class="room-map"></div>
       </section>
 
       <section id="finance" class="page">
@@ -229,9 +238,9 @@
             <label>Título<input id="sAppTitle"></label><label>Nomes do casal<input id="sCoupleNames"></label>
             <label>Data<input id="sDate" type="date"></label><label>Horário<input id="sTime" type="time"></label>
             <label class="full">Texto da foto<input id="sSubtitle"></label>
-            <label>Limite equivalente<input id="sGuestLimit" type="number" step=".5"></label><label>Capacidade padrão de mesa<input id="sCapacity" type="number"></label>
-            <label>Peso adulto<input id="sAdultWeight" type="number" step=".5"></label><label>Peso 0 a 8<input id="sChild08Weight" type="number" step=".5"></label>
-            <label>Peso 9 a 12<input id="sChild912Weight" type="number" step=".5"></label>
+            <label>Limite de referência<input id="sGuestLimit" type="number" step=".5"></label><label>Capacidade padrão de mesa<input id="sCapacity" type="number"></label>
+            <label>Equivalência de 1 adulto<input id="sAdultWeight" type="number" step=".5"></label><label>Equivalência de criança de 0 a 8<input id="sChild08Weight" type="number" step=".5"></label>
+            <label>Equivalência de criança de 9 a 12<input id="sChild912Weight" type="number" step=".5"></label>
             <label>Adulto ocupa assento?<select id="sAdultSeat"><option value="true">Sim</option><option value="false">Não</option></select></label>
             <label>0 a 8 ocupa assento?<select id="sChild08Seat"><option value="true">Sim</option><option value="false">Não</option></select></label>
             <label>9 a 12 ocupa assento?<select id="sChild912Seat"><option value="true">Sim</option><option value="false">Não</option></select></label>

@@ -272,7 +272,7 @@ function render(){
     return `<button class="${p.id==="dashboard"?"active":""} ${p.sub?"nav-sub":""}" data-nav-parent="${parent}" data-page="${p.id}" data-title="${p.label}"><span>${p.icon}</span>${p.label}</button>`;
   }).join("");
   document.querySelectorAll("#nav [data-page]").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.dataset.title));
-  document.querySelectorAll("#nav [data-nav-group]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#nav [data-nav-group]").forEach(b=>b.onclick=e=>{e.stopPropagation();
     b.classList.toggle("open");
     document.querySelectorAll(`#nav [data-nav-parent="${b.dataset.navGroup}"]`).forEach(x=>x.classList.toggle("nav-collapsed",!b.classList.contains("open")));
   });
@@ -719,3 +719,19 @@ if($("assistantQuestion"))$("assistantQuestion").onkeydown=e=>{if(e.key==="Enter
 document.querySelectorAll("[data-assistant-question]").forEach(b=>b.onclick=()=>{$("assistantQuestion").value=b.dataset.assistantQuestion;answerAssistant()});
 if($("ceremonyFullscreenBtn"))$("ceremonyFullscreenBtn").onclick=()=>document.body.classList.toggle("ceremony-display");
 setInterval(updateCeremony,30000);
+
+
+function setMobileMenu(open){
+  document.body.classList.toggle("sidebar-open",open);
+  const btn=$("mobileMenuBtn"),sidebar=$("sidebar");
+  if(btn)btn.setAttribute("aria-expanded",String(open));
+  if(sidebar)sidebar.setAttribute("aria-hidden",String(!open&&window.innerWidth<=900));
+}
+if($("mobileMenuBtn"))$("mobileMenuBtn").onclick=e=>{e.stopPropagation();setMobileMenu(!document.body.classList.contains("sidebar-open"))};
+if($("mobileMenuCloseBtn"))$("mobileMenuCloseBtn").onclick=()=>setMobileMenu(false);
+if($("sidebarOverlay"))$("sidebarOverlay").onclick=()=>setMobileMenu(false);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")setMobileMenu(false)});
+document.addEventListener("click",e=>{
+  if(window.innerWidth<=900&&e.target.closest("#nav [data-page]"))setMobileMenu(false);
+});
+window.addEventListener("resize",()=>{if(window.innerWidth>900)setMobileMenu(false)});

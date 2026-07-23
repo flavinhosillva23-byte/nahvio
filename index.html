@@ -233,7 +233,8 @@
       </section>
 
 
-      <section id="shower" class="page shower-page">
+
+      <section id="shower-dashboard" class="page shower-page">
         <div class="shower-hero card">
           <div>
             <span class="eyebrow">Evento especial</span>
@@ -256,88 +257,112 @@
             <div id="showerNextTasks" class="compact-list"></div>
           </article>
           <article class="card premium-panel">
-            <div class="panel-title pink-title"><span>Presentes</span></div>
-            <div id="showerGiftBreakdown" class="stats-list"></div>
+            <div class="panel-title pink-title"><span>Brincadeiras</span></div>
+            <div id="showerGameBreakdown" class="stats-list"></div>
           </article>
           <article class="card premium-panel">
-            <div class="panel-title blue-title"><span>Cronograma</span></div>
+            <div class="panel-title blue-title"><span>Próximos horários</span></div>
             <div id="showerNextSchedule" class="compact-list"></div>
           </article>
         </div>
 
-        <div class="shower-tabs" id="showerTabs">
-          <button class="active" data-shower-tab="showerGuests">Convidados</button>
-          <button data-shower-tab="showerGifts">Presentes</button>
-          <button data-shower-tab="showerTasks">Checklist</button>
-          <button data-shower-tab="showerFinance">Financeiro</button>
-          <button data-shower-tab="showerSchedule">Cronograma</button>
-          <button data-shower-tab="showerSettings">Configurações</button>
-        </div>
-
-        <div id="showerGuests" class="shower-tab active">
-          <div class="toolbar">
-            <input id="showerGuestSearch" class="search" placeholder="Pesquisar nome, CPF ou telefone">
-            <select id="showerGuestStatus"><option value="">Todos os status</option><option>Pendente</option><option>Confirmado</option><option>Recusado</option></select>
-            <button id="importWeddingGuestsBtn" class="secondary">Importar do casamento</button>
-            <button id="exportShowerPdfBtn" class="secondary">Exportar confirmados em PDF</button>
-            <button id="addShowerGuestBtn" class="primary">+ Novo convidado</button>
-          </div>
-          <div id="showerGuestSummary" class="summary-strip"></div>
-          <div class="card table-wrap">
-            <table><thead><tr><th>Nome completo</th><th>CPF</th><th>Telefone</th><th>Pessoas</th><th>Confirmação</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="showerGuestRows"></tbody></table>
+        <div class="quick-links card">
+          <div><span class="eyebrow">Acesso rápido</span><h3>O que você deseja organizar?</h3></div>
+          <div class="quick-link-grid">
+            <button data-open-page="shower-guests">👥 Convidados</button>
+            <button data-open-page="shower-gifts">🎁 Presentes</button>
+            <button data-open-page="shower-games">🎲 Brincadeiras</button>
+            <button data-open-page="shower-tasks">✓ Checklist</button>
+            <button data-open-page="shower-schedule">🕒 Cronograma</button>
+            <button data-open-page="shower-settings">⚙ Configurações</button>
           </div>
         </div>
+      </section>
 
-        <div id="showerGifts" class="shower-tab">
-          <div class="toolbar"><input id="showerGiftSearch" class="search" placeholder="Pesquisar presente ou pessoa"><select id="showerGiftFilter"><option value="">Todos os status</option><option>Disponível</option><option>Reservado</option><option>Recebido</option></select><button id="addShowerGiftBtn" class="primary">+ Novo presente</button></div>
-          <div id="showerGiftSummary" class="summary-strip"></div>
-          <div class="card table-wrap"><table><thead><tr><th>Presente</th><th>Categoria</th><th>Status</th><th>Quem reservou/deu</th><th>Valor estimado</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="showerGiftRows"></tbody></table></div>
+      <section id="shower-guests" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Convidados</h3><p>Cadastro, confirmação, CPF e lista para a portaria.</p></div></div>
+        <div class="toolbar">
+          <input id="showerGuestSearch" class="search" placeholder="Pesquisar nome, CPF ou telefone">
+          <select id="showerGuestStatus"><option value="">Todos os status</option><option>Pendente</option><option>Confirmado</option><option>Recusado</option></select>
+          <button id="importWeddingGuestsBtn" class="secondary">Importar do casamento</button>
+          <button id="exportShowerPdfBtn" class="secondary">Exportar confirmados</button>
+          <button id="addShowerGuestBtn" class="primary">+ Novo convidado</button>
         </div>
-
-        <div id="showerTasks" class="shower-tab">
-          <div class="toolbar"><select id="showerTaskFilter"><option value="">Todas</option><option value="open">Pendentes</option><option value="done">Concluídas</option><option value="late">Atrasadas</option></select><button id="addShowerTaskBtn" class="primary">+ Nova tarefa</button></div>
-          <div id="showerTaskSummary" class="summary-strip"></div>
-          <div id="showerTaskList" class="card task-list"></div>
+        <div id="showerGuestSummary" class="summary-strip"></div>
+        <div class="card table-wrap">
+          <table><thead><tr><th>Nome completo</th><th>CPF</th><th>Telefone</th><th>Pessoas</th><th>Confirmação</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="showerGuestRows"></tbody></table>
         </div>
+      </section>
 
-        <div id="showerFinance" class="shower-tab">
-          <div class="toolbar"><input id="showerFinanceSearch" class="search" placeholder="Pesquisar descrição ou categoria"><button id="addShowerFinanceBtn" class="primary">+ Novo lançamento</button></div>
-          <div id="showerFinanceSummary" class="summary-strip"></div>
-          <div class="card table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Previsto</th><th>Pago</th><th>Restante</th><th>Vencimento</th><th>Ações</th></tr></thead><tbody id="showerFinanceRows"></tbody></table></div>
+      <section id="shower-gifts" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Presentes</h3><p>Acompanhe os itens disponíveis, reservados e recebidos.</p></div></div>
+        <div class="toolbar"><input id="showerGiftSearch" class="search" placeholder="Pesquisar presente ou pessoa"><select id="showerGiftFilter"><option value="">Todos os status</option><option>Disponível</option><option>Reservado</option><option>Recebido</option></select><button id="addShowerGiftBtn" class="primary">+ Novo presente</button></div>
+        <div id="showerGiftSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Presente</th><th>Categoria</th><th>Status</th><th>Quem reservou/deu</th><th>Valor estimado</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="showerGiftRows"></tbody></table></div>
+      </section>
+
+      <section id="shower-tasks" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Checklist</h3><p>Uma tela limpa para acompanhar somente as tarefas.</p></div></div>
+        <div class="toolbar"><select id="showerTaskFilter"><option value="">Todas</option><option value="open">Pendentes</option><option value="done">Concluídas</option><option value="late">Atrasadas</option></select><button id="addShowerTaskBtn" class="primary">+ Nova tarefa</button></div>
+        <div id="showerTaskSummary" class="summary-strip"></div>
+        <div id="showerTaskList" class="card task-list"></div>
+      </section>
+
+      <section id="shower-games" class="page shower-page">
+        <div class="page-intro">
+          <div><span class="eyebrow">Chá de Cozinha</span><h3>Brincadeiras</h3><p>Planeje a ordem, os materiais, o responsável e o roteiro de cada atividade.</p></div>
+          <div class="actions"><button id="exportShowerGamesPdfBtn" class="secondary">Exportar roteiro em PDF</button><button id="addShowerGameBtn" class="primary">+ Nova brincadeira</button></div>
         </div>
-
-        <div id="showerSchedule" class="shower-tab">
-          <div class="toolbar"><button id="addShowerScheduleBtn" class="primary">+ Nova etapa</button></div>
-          <div id="showerScheduleList" class="schedule-list"></div>
+        <div class="toolbar">
+          <input id="showerGameSearch" class="search" placeholder="Pesquisar brincadeira, responsável ou material">
+          <select id="showerGameStatus"><option value="">Todos os status</option><option>Planejada</option><option>Preparada</option><option>Realizada</option><option>Cancelada</option></select>
         </div>
+        <div id="showerGameSummary" class="summary-strip"></div>
+        <div id="showerGameList" class="game-grid"></div>
+        <article class="card material-panel">
+          <div class="panel-title"><span>Lista geral de materiais</span></div>
+          <div id="showerMaterialList" class="material-list"></div>
+        </article>
+      </section>
 
-        <div id="showerSettings" class="shower-tab">
-          <div class="card">
-            <span class="eyebrow">Personalização completa</span><h3>Configurações do Chá de Cozinha</h3>
-            <div class="settings-grid">
-              <label>Nome do evento<input id="shName"></label>
-              <label>Data<input id="shDate" type="date"></label>
-              <label>Horário<input id="shTime" type="time"></label>
-              <label>Horário de término<input id="shEndTime" type="time"></label>
-              <label class="full">Local<input id="shLocation"></label>
-              <label class="full">Endereço<input id="shAddress"></label>
-              <label class="full">Link do Google Maps<input id="shMaps"></label>
-              <label>Orçamento previsto<input id="shBudget" type="number" step=".01"></label>
-              <label>Limite de convidados<input id="shGuestLimit" type="number"></label>
-              <label>CPF no cadastro<select id="shCpfRequired"><option value="false">Opcional</option><option value="true">Obrigatório</option></select></label>
-              <label>Exibir CPF na lista<select id="shShowCpf"><option value="true">Sim</option><option value="false">Não, somente na exportação</option></select></label>
-              <label>Permitir acompanhantes<select id="shAllowCompanions"><option value="true">Sim</option><option value="false">Não</option></select></label>
-              <label>Máximo de acompanhantes<input id="shMaxCompanions" type="number" min="0"></label>
-              <label>Mostrar tarefas no painel<select id="shShowTasks"><option value="true">Sim</option><option value="false">Não</option></select></label>
-              <label>Mostrar financeiro no painel<select id="shShowFinance"><option value="true">Sim</option><option value="false">Não</option></select></label>
-              <label>Cor principal<input id="shPrimaryColor" type="color"></label>
-              <label>Cor secundária<input id="shSecondaryColor" type="color"></label>
-              <label class="full">Mensagem de confirmação<textarea id="shConfirmMessage"></textarea></label>
-              <label class="full">Mensagem de recusa<textarea id="shDeclineMessage"></textarea></label>
-              <label class="full">Observações gerais<textarea id="shNotes"></textarea></label>
-            </div>
-            <div class="actions"><button id="saveShowerSettingsBtn" class="primary">Salvar configurações do chá</button></div>
+      <section id="shower-finance" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Financeiro</h3><p>Despesas do chá separadas dos gastos do casamento.</p></div></div>
+        <div class="toolbar"><input id="showerFinanceSearch" class="search" placeholder="Pesquisar descrição ou categoria"><button id="addShowerFinanceBtn" class="primary">+ Novo lançamento</button></div>
+        <div id="showerFinanceSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Previsto</th><th>Pago</th><th>Restante</th><th>Vencimento</th><th>Ações</th></tr></thead><tbody id="showerFinanceRows"></tbody></table></div>
+      </section>
+
+      <section id="shower-schedule" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Cronograma</h3><p>Veja apenas os horários e a sequência do dia.</p></div><button id="addShowerScheduleBtn" class="primary">+ Nova etapa</button></div>
+        <div id="showerScheduleList" class="schedule-list"></div>
+      </section>
+
+      <section id="shower-settings" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Configurações</h3><p>Edite todos os detalhes do evento em um único lugar.</p></div></div>
+        <div class="card">
+          <div class="settings-grid">
+            <label>Nome do evento<input id="shName"></label>
+            <label>Data<input id="shDate" type="date"></label>
+            <label>Horário<input id="shTime" type="time"></label>
+            <label>Horário de término<input id="shEndTime" type="time"></label>
+            <label class="full">Local<input id="shLocation"></label>
+            <label class="full">Endereço<input id="shAddress"></label>
+            <label class="full">Link do Google Maps<input id="shMaps"></label>
+            <label>Orçamento previsto<input id="shBudget" type="number" step=".01"></label>
+            <label>Limite de convidados<input id="shGuestLimit" type="number"></label>
+            <label>CPF no cadastro<select id="shCpfRequired"><option value="false">Opcional</option><option value="true">Obrigatório</option></select></label>
+            <label>Exibir CPF na lista<select id="shShowCpf"><option value="true">Sim</option><option value="false">Não, somente na exportação</option></select></label>
+            <label>Permitir acompanhantes<select id="shAllowCompanions"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>Máximo de acompanhantes<input id="shMaxCompanions" type="number" min="0"></label>
+            <label>Mostrar tarefas no painel<select id="shShowTasks"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>Mostrar financeiro no painel<select id="shShowFinance"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>Cor principal<input id="shPrimaryColor" type="color"></label>
+            <label>Cor secundária<input id="shSecondaryColor" type="color"></label>
+            <label class="full">Mensagem de confirmação<textarea id="shConfirmMessage"></textarea></label>
+            <label class="full">Mensagem de recusa<textarea id="shDeclineMessage"></textarea></label>
+            <label class="full">Observações gerais<textarea id="shNotes"></textarea></label>
           </div>
+          <div class="actions"><button id="saveShowerSettingsBtn" class="primary">Salvar configurações do chá</button></div>
         </div>
       </section>
 

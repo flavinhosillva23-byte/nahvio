@@ -4,7 +4,7 @@ if(!cfg.supabaseUrl||cfg.supabaseUrl.includes("COLE_AQUI")||!cfg.supabaseAnonKey
   $("setupError").classList.remove("hidden"); throw new Error("Supabase não configurado");
 }
 const db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-const state={settings:null,guests:[],tables:[],seats:[],seatsReady:false,finance:[],gifts:[],tasks:[],showerSettings:null,showerGuests:[],showerGifts:[],showerTasks:[],showerFinance:[],showerSchedule:[],edit:null,channel:null};
+const state={settings:null,guests:[],tables:[],seats:[],seatsReady:false,finance:[],gifts:[],tasks:[],showerSettings:null,showerGuests:[],showerGifts:[],showerTasks:[],showerGames:[],showerFinance:[],showerSchedule:[],edit:null,channel:null};
 const n=v=>Number(v||0);
 const money=v=>n(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const dateBR=v=>v?new Date(v+"T12:00:00").toLocaleDateString("pt-BR"):"";
@@ -51,9 +51,9 @@ function renderShower(){
   $("showerKFinance").textContent=money(Math.max(0,planned-paid));$("showerKFinanceStatus").textContent=`${money(paid)} pagos`;
   const nextTasks=state.showerTasks.filter(x=>!x.completed).slice(0,4);
   $("showerNextTasks").innerHTML=nextTasks.length?nextTasks.map(x=>`<div><span>○ ${esc(x.title)}</span><strong>${x.due_date?dateBR(x.due_date):"Sem data"}</strong></div>`).join(""):`<p class="empty-note">Nenhuma tarefa pendente.</p>`;
-  $("showerGiftBreakdown").innerHTML=`<div><span>Disponíveis</span><strong>${state.showerGifts.filter(x=>x.status==="Disponível").length}</strong></div><div><span>Reservados</span><strong>${reserved}</strong></div><div><span>Recebidos</span><strong>${received}</strong></div>`;
+  $("showerGameBreakdown").innerHTML=`<div><span>Planejadas</span><strong>${state.showerGames.filter(x=>x.status==="Planejada").length}</strong></div><div><span>Preparadas</span><strong>${state.showerGames.filter(x=>x.status==="Preparada").length}</strong></div><div><span>Realizadas</span><strong>${state.showerGames.filter(x=>x.status==="Realizada").length}</strong></div>`;
   $("showerNextSchedule").innerHTML=state.showerSchedule.slice(0,4).map(x=>`<div><span>${esc(x.title)}</span><strong>${esc(x.time||"")}</strong></div>`).join("")||`<p class="empty-note">Nenhuma etapa cadastrada.</p>`;
-  renderShowerGuests();renderShowerGifts();renderShowerTasks();renderShowerFinance();renderShowerSchedule();renderShowerSettings();
+  renderShowerGuests();renderShowerGifts();renderShowerTasks();renderShowerGames();renderShowerFinance();renderShowerSchedule();renderShowerSettings();
 }
 function renderShowerGuests(){
   const rows=showerGuestFiltered(),showCpf=state.showerSettings?.showCpf!==false;
@@ -69,6 +69,103 @@ function renderShowerTasks(){const f=$("showerTaskFilter")?.value||"",today=new 
 window.showerTaskModal=id=>{const x=state.showerTasks.find(v=>v.id===id)||{title:"",due_date:"",priority:"Normal",notes:"",completed:false};state.edit=id;modal(id?"Editar tarefa do chá":"Nova tarefa do chá",`<div class="form"><label class="full">Tarefa<input id="shtTitle" value="${esc(x.title)}"></label><label>Prazo<input id="shtDue" type="date" value="${x.due_date||""}"></label><label>Prioridade<select id="shtPriority">${["Baixa","Normal","Alta"].map(v=>`<option ${v===x.priority?"selected":""}>${v}</option>`)}</select></label><label class="full">Observações<textarea id="shtNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerTask()">Salvar tarefa</button></div>`)};
 window.saveShowerTask=async()=>{if(!$("shtTitle").value.trim())return toast("Informe a tarefa.");const obj={title:$("shtTitle").value.trim(),due_date:$("shtDue").value||null,priority:$("shtPriority").value,notes:$("shtNotes").value,completed:false,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_tasks").update(obj).eq("id",state.edit):await db.from("shower_tasks").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Tarefa salva.")}};
 window.toggleShowerTask=async(id,v)=>{const {error}=await db.from("shower_tasks").update({completed:v,updated_at:new Date().toISOString()}).eq("id",id);if(error)alert(error.message)};
+
+function showerGameFiltered(){
+  const q=($("showerGameSearch")?.value||"").toLowerCase(),st=$("showerGameStatus")?.value||"";
+  return state.showerGames.filter(x=>(`${x.title} ${x.responsible||""} ${x.materials||""}`).toLowerCase().includes(q)&&(!st||x.status===st));
+}
+function renderShowerGames(){
+  if(!$("showerGameList"))return;
+  const rows=showerGameFiltered();
+  $("showerGameSummary").innerHTML=`<span class="summary-pill">Total <strong>${rows.length}</strong></span><span class="summary-pill">Preparadas <strong>${rows.filter(x=>x.status==="Preparada").length}</strong></span><span class="summary-pill">Duração prevista <strong>${rows.reduce((a,x)=>a+n(x.duration_minutes),0)} min</strong></span>`;
+  $("showerGameList").innerHTML=rows.map((x,i)=>`<article class="card game-card">
+    <div class="game-card-top"><span class="game-order">${n(x.position_index)||i+1}</span><div><h4>${esc(x.title)}</h4><p>${esc(x.description||"")}</p></div>${badge(x.status)}</div>
+    <div class="game-meta">
+      <span><strong>Duração</strong>${n(x.duration_minutes)||0} min</span>
+      <span><strong>Responsável</strong>${esc(x.responsible||"Não definido")}</span>
+      <span><strong>Horário</strong>${esc(x.planned_time||"Não definido")}</span>
+      <span><strong>Participantes</strong>${esc(x.participants||"Todos")}</span>
+    </div>
+    ${x.materials?`<div class="game-detail"><strong>Materiais</strong><p>${esc(x.materials)}</p></div>`:""}
+    ${x.prize?`<div class="game-detail"><strong>Prêmio</strong><p>${esc(x.prize)}</p></div>`:""}
+    <div class="game-actions">
+      <button class="secondary" onclick="moveShowerGame('${x.id}',-1)" title="Mover para cima">↑</button>
+      <button class="secondary" onclick="moveShowerGame('${x.id}',1)" title="Mover para baixo">↓</button>
+      <button class="secondary" onclick="showerGameModal('${x.id}')">Editar</button>
+      <button class="secondary" onclick="addGameToSchedule('${x.id}')">Adicionar ao cronograma</button>
+      ${x.status!=="Realizada"?`<button class="secondary" onclick="setShowerGameStatus('${x.id}','Realizada')">Marcar realizada</button>`:""}
+      <button class="danger" onclick="removeRow('shower_games','${x.id}')">Excluir</button>
+    </div>
+  </article>`).join("")||`<div class="card empty-room"><strong>Nenhuma brincadeira encontrada</strong><span>Cadastre uma atividade para o chá.</span></div>`;
+  const materials=[...new Set(state.showerGames.flatMap(x=>String(x.materials||"").split(/[,;\n]+/).map(v=>v.trim()).filter(Boolean)))];
+  $("showerMaterialList").innerHTML=materials.length?materials.map(x=>`<label class="material-item"><input type="checkbox"><span>${esc(x)}</span></label>`).join(""):`<p class="empty-note">Os materiais informados nas brincadeiras aparecerão aqui automaticamente.</p>`;
+}
+window.showerGameModal=id=>{
+  const x=state.showerGames.find(v=>v.id===id)||{title:"",description:"",instructions:"",materials:"",duration_minutes:15,responsible:"",planned_time:"",participants:"Todos",prize:"",notes:"",status:"Planejada",position_index:state.showerGames.length+1};
+  state.edit=id;
+  modal(id?"Editar brincadeira":"Nova brincadeira",`<div class="form">
+    <label class="full">Nome da brincadeira<input id="shgmTitle" value="${esc(x.title)}"></label>
+    <label class="full">Descrição<input id="shgmDesc" value="${esc(x.description||"")}"></label>
+    <label>Duração em minutos<input id="shgmDuration" type="number" min="1" value="${n(x.duration_minutes)||15}"></label>
+    <label>Responsável<input id="shgmResponsible" value="${esc(x.responsible||"")}"></label>
+    <label>Horário planejado<input id="shgmTime" type="time" value="${x.planned_time||""}"></label>
+    <label>Participantes<input id="shgmParticipants" value="${esc(x.participants||"Todos")}"></label>
+    <label>Status<select id="shgmStatus">${["Planejada","Preparada","Realizada","Cancelada"].map(v=>`<option ${v===x.status?"selected":""}>${v}</option>`)}</select></label>
+    <label>Ordem<input id="shgmPosition" type="number" min="1" value="${n(x.position_index)||1}"></label>
+    <label class="full">Materiais necessários<textarea id="shgmMaterials" placeholder="Separe os itens por vírgula ou linha">${esc(x.materials||"")}</textarea></label>
+    <label class="full">Como funciona<textarea id="shgmInstructions">${esc(x.instructions||"")}</textarea></label>
+    <label class="full">Prêmio, se houver<input id="shgmPrize" value="${esc(x.prize||"")}"></label>
+    <label class="full">Observações<textarea id="shgmNotes">${esc(x.notes||"")}</textarea></label>
+  </div><div class="actions"><button class="primary" onclick="saveShowerGame()">Salvar brincadeira</button></div>`);
+};
+window.saveShowerGame=async()=>{
+  if(!$("shgmTitle").value.trim())return toast("Informe o nome da brincadeira.");
+  const obj={title:$("shgmTitle").value.trim(),description:$("shgmDesc").value.trim(),instructions:$("shgmInstructions").value,materials:$("shgmMaterials").value,duration_minutes:+$("shgmDuration").value,responsible:$("shgmResponsible").value.trim(),planned_time:$("shgmTime").value||null,participants:$("shgmParticipants").value.trim(),prize:$("shgmPrize").value.trim(),notes:$("shgmNotes").value,status:$("shgmStatus").value,position_index:+$("shgmPosition").value,updated_at:new Date().toISOString()};
+  const r=state.edit?await db.from("shower_games").update(obj).eq("id",state.edit):await db.from("shower_games").insert(obj);
+  if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Brincadeira salva.")}
+};
+window.setShowerGameStatus=async(id,status)=>{const {error}=await db.from("shower_games").update({status,updated_at:new Date().toISOString()}).eq("id",id);if(error)alert(error.message);else toast("Status atualizado.")};
+window.moveShowerGame=async(id,dir)=>{
+  const ordered=[...state.showerGames].sort((a,b)=>n(a.position_index)-n(b.position_index));
+  const i=ordered.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=ordered.length)return;
+  const a=ordered[i],b=ordered[j],pa=n(a.position_index)||i+1,pb=n(b.position_index)||j+1;
+  const [ra,rb]=await Promise.all([db.from("shower_games").update({position_index:pb}).eq("id",a.id),db.from("shower_games").update({position_index:pa}).eq("id",b.id)]);
+  if(ra.error||rb.error)alert((ra.error||rb.error).message);
+};
+window.addGameToSchedule=async id=>{
+  const x=state.showerGames.find(v=>v.id===id);if(!x)return;
+  const exists=state.showerSchedule.some(v=>v.game_id===id);
+  if(exists)return toast("Essa brincadeira já está no cronograma.");
+  const {error}=await db.from("shower_schedule").insert({time:x.planned_time||null,title:x.title,notes:`Brincadeira • ${x.duration_minutes||15} minutos`,position_index:state.showerSchedule.length+1,game_id:id});
+  if(error)alert(error.message);else toast("Brincadeira adicionada ao cronograma.");
+};
+function exportShowerGamesPDF(){
+  if(!state.showerGames.length)return toast("Não há brincadeiras cadastradas.");
+  const {jsPDF}=window.jspdf||{};if(!jsPDF)return toast("A biblioteca de PDF não carregou.");
+  const doc=new jsPDF({unit:"mm",format:"a4"}),s=state.showerSettings||{};let y=18;
+  const header=()=>{doc.setFont("helvetica","bold");doc.setFontSize(17);doc.text(s.eventName||"Chá de Cozinha",15,18);doc.setFontSize(11);doc.text("Roteiro das brincadeiras",15,25);doc.line(15,30,195,30);y=38};
+  header();
+  [...state.showerGames].sort((a,b)=>n(a.position_index)-n(b.position_index)).forEach((x,i)=>{
+    const lines=[
+      `${i+1}. ${x.title}`,
+      `Horário: ${x.planned_time||"A definir"}   Duração: ${x.duration_minutes||0} min   Status: ${x.status}`,
+      `Responsável: ${x.responsible||"A definir"}`,
+      `Materiais: ${x.materials||"Nenhum informado"}`,
+      `Como funciona: ${x.instructions||x.description||"Sem instruções"}`,
+      x.prize?`Prêmio: ${x.prize}`:""
+    ].filter(Boolean);
+    const wrapped=lines.flatMap((line,idx)=>doc.splitTextToSize(line,idx===0?180:175));
+    const height=wrapped.length*5+7;
+    if(y+height>282){doc.addPage();header()}
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(wrapped[0],15,y);y+=6;
+    doc.setFont("helvetica","normal");doc.setFontSize(9.5);
+    wrapped.slice(1).forEach(line=>{doc.text(line,20,y);y+=5});
+    y+=5;
+  });
+  doc.save(`${(s.eventName||"cha_de_cozinha").toLowerCase().replace(/\s+/g,"_")}_roteiro_brincadeiras.pdf`);
+  toast("Roteiro das brincadeiras gerado.");
+}
+
 function renderShowerFinance(){const q=($("showerFinanceSearch")?.value||"").toLowerCase(),rows=state.showerFinance.filter(x=>(`${x.description} ${x.category}`).toLowerCase().includes(q)),planned=rows.reduce((a,x)=>a+n(x.planned),0),paid=rows.reduce((a,x)=>a+n(x.paid),0);$("showerFinanceSummary").innerHTML=`<span class="summary-pill">Previsto <strong>${money(planned)}</strong></span><span class="summary-pill">Pago <strong>${money(paid)}</strong></span><span class="summary-pill">Restante <strong>${money(planned-paid)}</strong></span>`;$("showerFinanceRows").innerHTML=rows.map(x=>`<tr><td>${esc(x.description)}</td><td>${esc(x.category)}</td><td>${money(x.planned)}</td><td>${money(x.paid)}</td><td>${money(n(x.planned)-n(x.paid))}</td><td>${dateBR(x.due_date)}</td><td><button class="secondary" onclick="showerFinanceModal('${x.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_finance','${x.id}')">Excluir</button></td></tr>`).join("")||`<tr><td colspan="7">Nenhum lançamento.</td></tr>`}
 window.showerFinanceModal=id=>{const x=state.showerFinance.find(v=>v.id===id)||{description:"",category:"Outros",planned:0,paid:0,due_date:"",notes:""};state.edit=id;modal(id?"Editar lançamento":"Novo lançamento do chá",`<div class="form"><label class="full">Descrição<input id="shfDesc" value="${esc(x.description)}"></label><label>Categoria<input id="shfCat" value="${esc(x.category)}"></label><label>Previsto<input id="shfPlanned" type="number" step=".01" value="${n(x.planned)}"></label><label>Pago<input id="shfPaid" type="number" step=".01" value="${n(x.paid)}"></label><label>Vencimento<input id="shfDue" type="date" value="${x.due_date||""}"></label><label class="full">Observações<textarea id="shfNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerFinance()">Salvar lançamento</button></div>`)};
 window.saveShowerFinance=async()=>{if(!$("shfDesc").value.trim())return toast("Informe a descrição.");const obj={description:$("shfDesc").value.trim(),category:$("shfCat").value.trim(),planned:+$("shfPlanned").value,paid:+$("shfPaid").value,due_date:$("shfDue").value||null,notes:$("shfNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_finance").update(obj).eq("id",state.edit):await db.from("shower_finance").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Lançamento salvo.")}};
@@ -112,7 +209,7 @@ $("refreshBtn").onclick=()=>loadAll(true);
 async function showApp(){$("authScreen").classList.add("hidden");$("app").classList.remove("hidden");await loadAll();subscribe()}
 async function loadAll(manual=false){
   $("syncText").textContent="Atualizando...";
-  const [s,g,t,z,f,p,c,ss,sg,sf,st,sfi,ssc]=await Promise.all([
+  const [s,g,t,z,f,p,c,ss,sg,sf,st,sgm,sfi,ssc]=await Promise.all([
     db.from("settings").select("*").eq("key","general").single(),
     db.from("guests").select("*").order("name"),
     db.from("wedding_tables").select("*").order("name"),
@@ -124,23 +221,45 @@ async function loadAll(manual=false){
     db.from("shower_guests").select("*").order("full_name"),
     db.from("shower_gifts").select("*").order("created_at",{ascending:false}),
     db.from("shower_tasks").select("*").order("due_date",{ascending:true}),
+    db.from("shower_games").select("*").order("position_index",{ascending:true}),
     db.from("shower_finance").select("*").order("created_at",{ascending:false}),
     db.from("shower_schedule").select("*").order("position_index",{ascending:true})
   ]);
   if(s.error){alert("Erro ao carregar configurações: "+s.error.message);return}
   state.settings=s.data.value;state.guests=g.data||[];state.tables=(t.data||[]).sort((a,b)=>n(a.position_index)-n(b.position_index)||String(a.name).localeCompare(String(b.name),"pt-BR",{numeric:true}));state.seatsReady=!z.error;state.seats=z.data||[];state.finance=f.data||[];state.gifts=p.data||[];state.tasks=c.data||[];
   state.showerSettings=ss.data?.value||{eventName:"Chá de Cozinha",eventDate:"",eventTime:"14:00",endTime:"18:00",location:"",address:"",mapsLink:"",budget:0,guestLimit:0,cpfRequired:false,showCpf:true,allowCompanions:true,maxCompanions:3,showTasks:true,showFinance:true,primaryColor:"#f05a83",secondaryColor:"#8b60e8",confirmMessage:"Presença confirmada!",declineMessage:"Sentiremos sua falta.",notes:""};
-  state.showerGuests=sg.data||[];state.showerGifts=sf.data||[];state.showerTasks=st.data||[];state.showerFinance=sfi.data||[];state.showerSchedule=ssc.data||[];
+  state.showerGuests=sg.data||[];state.showerGifts=sf.data||[];state.showerTasks=st.data||[];state.showerGames=sgm.data||[];state.showerFinance=sfi.data||[];state.showerSchedule=ssc.data||[];
   render();$("syncText").textContent="Sincronizado";if(manual)toast("Dados atualizados.");
 }
 function subscribe(){
   if(state.channel) return;
   state.channel=db.channel("planner").on("postgres_changes",{event:"*",schema:"public"},()=>loadAll()).subscribe();
 }
-const pages=[["dashboard","⌂","Dashboard"],["guests","♟","Convidados"],["tables","◉","Mesas"],["finance","R$","Financeiro"],["gifts","◇","Presentes"],["tasks","✓","Checklist"],["shower","🎁","Chá de Cozinha"],["settings","⚙","Configurações"]];
+const pages=[
+  {id:"dashboard",icon:"⌂",label:"Dashboard"},
+  {id:"guests",icon:"♟",label:"Convidados"},
+  {id:"tables",icon:"◉",label:"Mesas"},
+  {id:"finance",icon:"R$",label:"Financeiro"},
+  {id:"gifts",icon:"◇",label:"Presentes"},
+  {id:"tasks",icon:"✓",label:"Checklist"},
+  {group:"Chá de Cozinha"},
+  {id:"shower-dashboard",icon:"🎁",label:"Visão geral",sub:true},
+  {id:"shower-guests",icon:"👥",label:"Convidados",sub:true},
+  {id:"shower-gifts",icon:"◇",label:"Presentes",sub:true},
+  {id:"shower-games",icon:"🎲",label:"Brincadeiras",sub:true},
+  {id:"shower-tasks",icon:"✓",label:"Checklist",sub:true},
+  {id:"shower-schedule",icon:"◷",label:"Cronograma",sub:true},
+  {id:"shower-finance",icon:"R$",label:"Financeiro",sub:true},
+  {id:"shower-settings",icon:"⚙",label:"Configurações",sub:true},
+  {group:"Casamento"},
+  {id:"settings",icon:"⚙",label:"Configurações"}
+];
 function render(){
-  $("nav").innerHTML=pages.map((p,i)=>`<button class="${i===0?"active":""}" data-page="${p[0]}">${p[1]} ${p[2]}</button>`).join("");
-  document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.textContent.replace(/^[^\s]+\s/,"")));
+  $("nav").innerHTML=pages.map((p,i)=>p.group
+    ?`<div class="nav-group">${p.group}</div>`
+    :`<button class="${p.id==="dashboard"?"active":""} ${p.sub?"nav-sub":""}" data-page="${p.id}" data-title="${p.label}"><span>${p.icon}</span>${p.label}</button>`
+  ).join("");
+  document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.dataset.title));
   renderBrand();renderDashboard();renderGuests();renderTables();renderFinance();renderGifts();renderTasks();renderShower();renderSettings();
 }
 function openPage(id,title){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$("pageTitle").textContent=title;$("sidebar").classList.remove("open");window.scrollTo(0,0)}
@@ -421,12 +540,17 @@ $("exportGuestsBtn").onclick=()=>csv("convidados_nahvio.csv",["Nome","Lado","Adu
 $("exportFinanceBtn").onclick=()=>csv("financeiro_nahvio.csv",["Descrição","Categoria","Previsto","Pago","Restante","Vencimento"],state.finance.map(x=>[x.description,x.category,x.planned,x.paid,n(x.planned)-n(x.paid),x.due_date||""]));
 auth();
 
+
+["showerGameSearch","showerGameStatus"].forEach(id=>{if($(id))$(id).oninput=renderShowerGames});
+if($("addShowerGameBtn"))$("addShowerGameBtn").onclick=()=>showerGameModal();
+if($("exportShowerGamesPdfBtn"))$("exportShowerGamesPdfBtn").onclick=exportShowerGamesPDF;
 document.addEventListener("click",e=>{
-  const b=e.target.closest("[data-shower-tab]");
+  const b=e.target.closest("[data-open-page]");
   if(!b)return;
-  document.querySelectorAll("[data-shower-tab]").forEach(x=>x.classList.toggle("active",x===b));
-  document.querySelectorAll(".shower-tab").forEach(x=>x.classList.toggle("active",x.id===b.dataset.showerTab));
+  const page=pages.find(x=>x.id===b.dataset.openPage);
+  openPage(b.dataset.openPage,page?.label||"Chá de Cozinha");
 });
+
 ["showerGuestSearch","showerGuestStatus"].forEach(id=>{if($(id))$(id).oninput=renderShowerGuests});
 ["showerGiftSearch","showerGiftFilter"].forEach(id=>{if($(id))$(id).oninput=renderShowerGifts});
 if($("showerTaskFilter"))$("showerTaskFilter").oninput=renderShowerTasks;

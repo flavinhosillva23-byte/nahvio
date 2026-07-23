@@ -4,7 +4,7 @@ if(!cfg.supabaseUrl||cfg.supabaseUrl.includes("COLE_AQUI")||!cfg.supabaseAnonKey
   $("setupError").classList.remove("hidden"); throw new Error("Supabase não configurado");
 }
 const db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-const state={settings:null,guests:[],tables:[],seats:[],seatsReady:false,finance:[],gifts:[],tasks:[],edit:null,channel:null};
+const state={settings:null,guests:[],tables:[],seats:[],seatsReady:false,finance:[],gifts:[],tasks:[],showerSettings:null,showerGuests:[],showerGifts:[],showerTasks:[],showerFinance:[],showerSchedule:[],edit:null,channel:null};
 const n=v=>Number(v||0);
 const money=v=>n(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const dateBR=v=>v?new Date(v+"T12:00:00").toLocaleDateString("pt-BR"):"";
@@ -15,6 +15,95 @@ const seats=g=>(state.settings.adultSeat?n(g.adults):0)+(state.settings.child08S
 function toast(text){$("toast").textContent=text;$("toast").classList.remove("hidden");clearTimeout(toast.t);toast.t=setTimeout(()=>$("toast").classList.add("hidden"),2800)}
 function notice(t){$("authNotice").textContent=t;$("authNotice").classList.remove("hidden")}
 function badge(s){return `<span class="badge ${s==="Confirmado"||s==="Pago"?"ok":s==="Recusado"||s==="Atrasado"?"no":s==="Pendente"?"wait":"neutral"}">${esc(s)}</span>`}
+
+function onlyDigits(v){return String(v||"").replace(/\D/g,"")}
+function formatCPF(v){const d=onlyDigits(v).slice(0,11);return d.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2")}
+function validCPF(v){
+  const cpf=onlyDigits(v);
+  if(cpf.length!==11||/^(\d)\1{10}$/.test(cpf))return false;
+  const calc=len=>{let sum=0;for(let i=0;i<len;i++)sum+=+cpf[i]*(len+1-i);const r=(sum*10)%11;return r===10?0:r};
+  return calc(9)===+cpf[9]&&calc(10)===+cpf[10];
+}
+function showerGuestFiltered(){
+  const q=($("showerGuestSearch")?.value||"").toLowerCase(),st=$("showerGuestStatus")?.value||"";
+  return state.showerGuests.filter(g=>(`${g.full_name} ${g.cpf||""} ${g.phone||""}`).toLowerCase().includes(q)&&(!st||g.rsvp_status===st));
+}
+function renderShower(){
+  if(!$("shower"))return;
+  const s=state.showerSettings||{};
+  document.documentElement.style.setProperty("--shower-primary",s.primaryColor||"#f05a83");
+  document.documentElement.style.setProperty("--shower-secondary",s.secondaryColor||"#8b60e8");
+  $("showerTitle").textContent=s.eventName||"Chá de Cozinha";
+  $("showerEventInfo").textContent=[s.eventDate?dateBR(s.eventDate):"",s.eventTime||"",s.location||""].filter(Boolean).join(" • ")||"Configure a data e o local do evento.";
+  const event=s.eventDate?new Date(`${s.eventDate}T${s.eventTime||"00:00"}:00-03:00`):null;
+  $("showerDays").textContent=event?Math.max(0,Math.ceil((event-Date.now())/86400000)):0;
+  const confirmed=state.showerGuests.filter(g=>g.rsvp_status==="Confirmado");
+  const totalPeople=state.showerGuests.reduce((a,g)=>a+1+n(g.companions),0);
+  const confirmedPeople=confirmed.reduce((a,g)=>a+1+n(g.companions),0);
+  $("showerKGuests").textContent=totalPeople;
+  $("showerKConfirmed").textContent=`${confirmedPeople} confirmados • ${state.showerGuests.length} cadastros`;
+  const received=state.showerGifts.filter(x=>x.status==="Recebido").length,reserved=state.showerGifts.filter(x=>x.status==="Reservado").length;
+  $("showerKGifts").textContent=state.showerGifts.length;
+  $("showerKGiftStatus").textContent=`${received} recebidos • ${reserved} reservados`;
+  const done=state.showerTasks.filter(x=>x.completed).length,tp=state.showerTasks.length?Math.round(done/state.showerTasks.length*100):0;
+  $("showerKTasks").textContent=tp+"%";$("showerKTaskStatus").textContent=`${done} de ${state.showerTasks.length} concluídas`;
+  const planned=state.showerFinance.reduce((a,x)=>a+n(x.planned),0),paid=state.showerFinance.reduce((a,x)=>a+n(x.paid),0);
+  $("showerKFinance").textContent=money(Math.max(0,planned-paid));$("showerKFinanceStatus").textContent=`${money(paid)} pagos`;
+  const nextTasks=state.showerTasks.filter(x=>!x.completed).slice(0,4);
+  $("showerNextTasks").innerHTML=nextTasks.length?nextTasks.map(x=>`<div><span>○ ${esc(x.title)}</span><strong>${x.due_date?dateBR(x.due_date):"Sem data"}</strong></div>`).join(""):`<p class="empty-note">Nenhuma tarefa pendente.</p>`;
+  $("showerGiftBreakdown").innerHTML=`<div><span>Disponíveis</span><strong>${state.showerGifts.filter(x=>x.status==="Disponível").length}</strong></div><div><span>Reservados</span><strong>${reserved}</strong></div><div><span>Recebidos</span><strong>${received}</strong></div>`;
+  $("showerNextSchedule").innerHTML=state.showerSchedule.slice(0,4).map(x=>`<div><span>${esc(x.title)}</span><strong>${esc(x.time||"")}</strong></div>`).join("")||`<p class="empty-note">Nenhuma etapa cadastrada.</p>`;
+  renderShowerGuests();renderShowerGifts();renderShowerTasks();renderShowerFinance();renderShowerSchedule();renderShowerSettings();
+}
+function renderShowerGuests(){
+  const rows=showerGuestFiltered(),showCpf=state.showerSettings?.showCpf!==false;
+  $("showerGuestSummary").innerHTML=`<span class="summary-pill">Cadastros <strong>${rows.length}</strong></span><span class="summary-pill">Confirmados <strong>${rows.filter(x=>x.rsvp_status==="Confirmado").length}</strong></span><span class="summary-pill">Pessoas confirmadas <strong>${rows.filter(x=>x.rsvp_status==="Confirmado").reduce((a,g)=>a+1+n(g.companions),0)}</strong></span>`;
+  $("showerGuestRows").innerHTML=rows.map(g=>`<tr class="${g.rsvp_status==="Confirmado"?"guest-confirmed":g.rsvp_status==="Recusado"?"guest-declined":"guest-pending"}"><td><strong>${esc(g.full_name)}</strong></td><td>${showCpf?esc(formatCPF(g.cpf||"")):"•••.•••.•••-••"}</td><td>${esc(g.phone||"")}</td><td>${1+n(g.companions)}</td><td>${badge(g.rsvp_status)}</td><td>${esc(g.notes||"")}</td><td><button class="secondary" onclick="showerGuestModal('${g.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_guests','${g.id}')">Excluir</button></td></tr>`).join("")||`<tr><td colspan="7">Nenhum convidado cadastrado.</td></tr>`;
+}
+window.showerGuestModal=id=>{const g=state.showerGuests.find(x=>x.id===id)||{full_name:"",cpf:"",phone:"",companions:0,rsvp_status:"Pendente",notes:""};state.edit=id;modal(id?"Editar convidado do chá":"Novo convidado do chá",`<div class="form"><label class="full">Nome completo<input id="sgName" value="${esc(g.full_name)}"></label><label>CPF<input id="sgCpf" inputmode="numeric" maxlength="14" value="${esc(formatCPF(g.cpf||""))}" oninput="this.value=formatCPF(this.value)"></label><label>Telefone<input id="sgPhone" value="${esc(g.phone||"")}"></label><label>Acompanhantes<input id="sgComp" type="number" min="0" max="${n(state.showerSettings.maxCompanions)||20}" value="${n(g.companions)}"></label><label>Confirmação<select id="sgRsvp">${["Pendente","Confirmado","Recusado"].map(x=>`<option ${x===g.rsvp_status?"selected":""}>${x}</option>`)}</select></label><label class="full">Observações<textarea id="sgNotes">${esc(g.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerGuest()">Salvar convidado</button></div>`)};
+window.saveShowerGuest=async()=>{const name=$("sgName").value.trim(),cpf=onlyDigits($("sgCpf").value);if(!name)return toast("Informe o nome completo.");if(state.showerSettings.cpfRequired&&!cpf)return toast("O CPF é obrigatório.");if(cpf&&!validCPF(cpf))return toast("Informe um CPF válido.");const obj={full_name:name,cpf:cpf||null,phone:$("sgPhone").value.trim(),companions:+$("sgComp").value,rsvp_status:$("sgRsvp").value,notes:$("sgNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_guests").update(obj).eq("id",state.edit):await db.from("shower_guests").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Convidado salvo.")}};
+function renderShowerGifts(){const q=($("showerGiftSearch")?.value||"").toLowerCase(),f=$("showerGiftFilter")?.value||"",rows=state.showerGifts.filter(x=>(`${x.item} ${x.given_by||""}`).toLowerCase().includes(q)&&(!f||x.status===f));$("showerGiftSummary").innerHTML=`<span class="summary-pill">Total <strong>${rows.length}</strong></span><span class="summary-pill">Reservados <strong>${rows.filter(x=>x.status==="Reservado").length}</strong></span><span class="summary-pill">Recebidos <strong>${rows.filter(x=>x.status==="Recebido").length}</strong></span>`;$("showerGiftRows").innerHTML=rows.map(x=>`<tr><td><strong>${esc(x.item)}</strong></td><td>${esc(x.category||"")}</td><td>${badge(x.status)}</td><td>${esc(x.given_by||"")}</td><td>${money(x.estimated_value)}</td><td>${esc(x.notes||"")}</td><td><button class="secondary" onclick="showerGiftModal('${x.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_gifts','${x.id}')">Excluir</button></td></tr>`).join("")||`<tr><td colspan="7">Nenhum presente cadastrado.</td></tr>`}
+window.showerGiftModal=id=>{const x=state.showerGifts.find(v=>v.id===id)||{item:"",category:"Cozinha",status:"Disponível",given_by:"",estimated_value:0,notes:""};state.edit=id;modal(id?"Editar presente":"Novo presente",`<div class="form"><label class="full">Presente<input id="shgItem" value="${esc(x.item)}"></label><label>Categoria<input id="shgCat" value="${esc(x.category||"")}"></label><label>Status<select id="shgStatus">${["Disponível","Reservado","Recebido"].map(v=>`<option ${v===x.status?"selected":""}>${v}</option>`)}</select></label><label>Quem reservou ou presenteou<input id="shgBy" value="${esc(x.given_by||"")}"></label><label>Valor estimado<input id="shgValue" type="number" step=".01" value="${n(x.estimated_value)}"></label><label class="full">Observações<textarea id="shgNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerGift()">Salvar presente</button></div>`)};
+window.saveShowerGift=async()=>{if(!$("shgItem").value.trim())return toast("Informe o presente.");const obj={item:$("shgItem").value.trim(),category:$("shgCat").value.trim(),status:$("shgStatus").value,given_by:$("shgBy").value.trim(),estimated_value:+$("shgValue").value,notes:$("shgNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_gifts").update(obj).eq("id",state.edit):await db.from("shower_gifts").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Presente salvo.")}};
+function renderShowerTasks(){const f=$("showerTaskFilter")?.value||"",today=new Date().toISOString().slice(0,10),rows=state.showerTasks.filter(x=>!f||(f==="done"&&x.completed)||(f==="open"&&!x.completed)||(f==="late"&&!x.completed&&x.due_date&&x.due_date<today));$("showerTaskSummary").innerHTML=`<span class="summary-pill">Total <strong>${rows.length}</strong></span><span class="summary-pill">Concluídas <strong>${rows.filter(x=>x.completed).length}</strong></span>`;$("showerTaskList").innerHTML=rows.map(x=>`<div class="task-row ${x.completed?"done":""}"><input type="checkbox" ${x.completed?"checked":""} onchange="toggleShowerTask('${x.id}',this.checked)"><div class="task-main"><strong>${esc(x.title)}</strong><small>${x.due_date?dateBR(x.due_date):"Sem prazo"} • ${esc(x.priority||"Normal")}</small>${x.notes?`<p>${esc(x.notes)}</p>`:""}</div><button class="secondary" onclick="showerTaskModal('${x.id}')">Editar</button><button class="danger" onclick="removeRow('shower_tasks','${x.id}')">Excluir</button></div>`).join("")||`<p style="padding:16px">Nenhuma tarefa.</p>`}
+window.showerTaskModal=id=>{const x=state.showerTasks.find(v=>v.id===id)||{title:"",due_date:"",priority:"Normal",notes:"",completed:false};state.edit=id;modal(id?"Editar tarefa do chá":"Nova tarefa do chá",`<div class="form"><label class="full">Tarefa<input id="shtTitle" value="${esc(x.title)}"></label><label>Prazo<input id="shtDue" type="date" value="${x.due_date||""}"></label><label>Prioridade<select id="shtPriority">${["Baixa","Normal","Alta"].map(v=>`<option ${v===x.priority?"selected":""}>${v}</option>`)}</select></label><label class="full">Observações<textarea id="shtNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerTask()">Salvar tarefa</button></div>`)};
+window.saveShowerTask=async()=>{if(!$("shtTitle").value.trim())return toast("Informe a tarefa.");const obj={title:$("shtTitle").value.trim(),due_date:$("shtDue").value||null,priority:$("shtPriority").value,notes:$("shtNotes").value,completed:false,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_tasks").update(obj).eq("id",state.edit):await db.from("shower_tasks").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Tarefa salva.")}};
+window.toggleShowerTask=async(id,v)=>{const {error}=await db.from("shower_tasks").update({completed:v,updated_at:new Date().toISOString()}).eq("id",id);if(error)alert(error.message)};
+function renderShowerFinance(){const q=($("showerFinanceSearch")?.value||"").toLowerCase(),rows=state.showerFinance.filter(x=>(`${x.description} ${x.category}`).toLowerCase().includes(q)),planned=rows.reduce((a,x)=>a+n(x.planned),0),paid=rows.reduce((a,x)=>a+n(x.paid),0);$("showerFinanceSummary").innerHTML=`<span class="summary-pill">Previsto <strong>${money(planned)}</strong></span><span class="summary-pill">Pago <strong>${money(paid)}</strong></span><span class="summary-pill">Restante <strong>${money(planned-paid)}</strong></span>`;$("showerFinanceRows").innerHTML=rows.map(x=>`<tr><td>${esc(x.description)}</td><td>${esc(x.category)}</td><td>${money(x.planned)}</td><td>${money(x.paid)}</td><td>${money(n(x.planned)-n(x.paid))}</td><td>${dateBR(x.due_date)}</td><td><button class="secondary" onclick="showerFinanceModal('${x.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_finance','${x.id}')">Excluir</button></td></tr>`).join("")||`<tr><td colspan="7">Nenhum lançamento.</td></tr>`}
+window.showerFinanceModal=id=>{const x=state.showerFinance.find(v=>v.id===id)||{description:"",category:"Outros",planned:0,paid:0,due_date:"",notes:""};state.edit=id;modal(id?"Editar lançamento":"Novo lançamento do chá",`<div class="form"><label class="full">Descrição<input id="shfDesc" value="${esc(x.description)}"></label><label>Categoria<input id="shfCat" value="${esc(x.category)}"></label><label>Previsto<input id="shfPlanned" type="number" step=".01" value="${n(x.planned)}"></label><label>Pago<input id="shfPaid" type="number" step=".01" value="${n(x.paid)}"></label><label>Vencimento<input id="shfDue" type="date" value="${x.due_date||""}"></label><label class="full">Observações<textarea id="shfNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerFinance()">Salvar lançamento</button></div>`)};
+window.saveShowerFinance=async()=>{if(!$("shfDesc").value.trim())return toast("Informe a descrição.");const obj={description:$("shfDesc").value.trim(),category:$("shfCat").value.trim(),planned:+$("shfPlanned").value,paid:+$("shfPaid").value,due_date:$("shfDue").value||null,notes:$("shfNotes").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_finance").update(obj).eq("id",state.edit):await db.from("shower_finance").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Lançamento salvo.")}};
+function renderShowerSchedule(){$("showerScheduleList").innerHTML=state.showerSchedule.map(x=>`<article class="card schedule-item"><div class="schedule-time">${esc(x.time||"--:--")}</div><div><strong>${esc(x.title)}</strong><p>${esc(x.notes||"")}</p></div><div><button class="secondary" onclick="showerScheduleModal('${x.id}')">Editar</button> <button class="danger" onclick="removeRow('shower_schedule','${x.id}')">Excluir</button></div></article>`).join("")||`<div class="card empty-room"><strong>Nenhuma etapa cadastrada</strong><span>Adicione os horários e atividades do chá.</span></div>`}
+window.showerScheduleModal=id=>{const x=state.showerSchedule.find(v=>v.id===id)||{time:"14:00",title:"",notes:"",position_index:state.showerSchedule.length+1};state.edit=id;modal(id?"Editar etapa":"Nova etapa",`<div class="form"><label>Horário<input id="shsTime" type="time" value="${x.time||""}"></label><label>Ordem<input id="shsPos" type="number" min="1" value="${n(x.position_index)||1}"></label><label class="full">Atividade<input id="shsTitle" value="${esc(x.title)}"></label><label class="full">Observações<textarea id="shsNotes">${esc(x.notes||"")}</textarea></label></div><div class="actions"><button class="primary" onclick="saveShowerSchedule()">Salvar etapa</button></div>`)};
+window.saveShowerSchedule=async()=>{if(!$("shsTitle").value.trim())return toast("Informe a atividade.");const obj={time:$("shsTime").value,title:$("shsTitle").value.trim(),notes:$("shsNotes").value,position_index:+$("shsPos").value,updated_at:new Date().toISOString()};const r=state.edit?await db.from("shower_schedule").update(obj).eq("id",state.edit):await db.from("shower_schedule").insert(obj);if(r.error)alert(r.error.message);else{$("modal").classList.add("hidden");toast("Etapa salva.")}};
+function renderShowerSettings(){const s=state.showerSettings||{};const map={shName:s.eventName,shDate:s.eventDate,shTime:s.eventTime,shEndTime:s.endTime,shLocation:s.location,shAddress:s.address,shMaps:s.mapsLink,shBudget:s.budget,shGuestLimit:s.guestLimit,shMaxCompanions:s.maxCompanions,shPrimaryColor:s.primaryColor,shSecondaryColor:s.secondaryColor,shConfirmMessage:s.confirmMessage,shDeclineMessage:s.declineMessage,shNotes:s.notes};Object.entries(map).forEach(([id,v])=>{if($(id))$(id).value=v??""});$("shCpfRequired").value=String(!!s.cpfRequired);$("shShowCpf").value=String(s.showCpf!==false);$("shAllowCompanions").value=String(s.allowCompanions!==false);$("shShowTasks").value=String(s.showTasks!==false);$("shShowFinance").value=String(s.showFinance!==false)}
+function exportShowerPDF(){
+  const confirmed=state.showerGuests.filter(x=>x.rsvp_status==="Confirmado").sort((a,b)=>a.full_name.localeCompare(b.full_name,"pt-BR"));
+  if(!confirmed.length)return toast("Não há convidados confirmados.");
+  modal("Exportar lista de confirmados",`<div class="form one"><label>Modelo do PDF<select id="pdfMode"><option value="gate">Portaria: nome completo e CPF</option><option value="contact">Contato: nome completo e telefone</option><option value="complete">Lista completa</option></select></label><label>Ordenação<select id="pdfOrder"><option value="name">Ordem alfabética</option><option value="confirmed">Ordem de confirmação</option></select></label></div><div class="notice">Somente convidados com status <strong>Confirmado</strong> serão incluídos.</div><div class="actions"><button class="primary" onclick="generateShowerPDF()">Gerar PDF</button></div>`);
+}
+window.generateShowerPDF=()=>{
+  const {jsPDF}=window.jspdf||{};if(!jsPDF)return toast("A biblioteca de PDF não carregou.");
+  const mode=$("pdfMode").value,order=$("pdfOrder").value,s=state.showerSettings;
+  let rows=state.showerGuests.filter(x=>x.rsvp_status==="Confirmado");
+  rows.sort(order==="confirmed"?(a,b)=>String(a.updated_at||"").localeCompare(String(b.updated_at||"")):(a,b)=>a.full_name.localeCompare(b.full_name,"pt-BR"));
+  const doc=new jsPDF({unit:"mm",format:"a4"});let y=18,page=1;
+  const title=s.eventName||"Chá de Cozinha";
+  const header=()=>{doc.setFont("helvetica","bold");doc.setFontSize(17);doc.text(title,15,18);doc.setFontSize(11);doc.setFont("helvetica","normal");doc.text("Lista de convidados confirmados",15,25);doc.text([s.eventDate?`Data: ${dateBR(s.eventDate)}`:"",s.location?`Local: ${s.location}`:""].filter(Boolean).join("   "),15,31);doc.line(15,35,195,35);y=43};
+  header();
+  rows.forEach((g,i)=>{
+    if(y>277){doc.addPage();page++;header()}
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(`${i+1}. ${g.full_name}`,15,y);y+=5;
+    doc.setFont("helvetica","normal");doc.setFontSize(10);
+    if(mode==="gate")doc.text(`CPF: ${g.cpf?formatCPF(g.cpf):"Não informado"}`,20,y);
+    if(mode==="contact")doc.text(`Telefone: ${g.phone||"Não informado"}`,20,y);
+    if(mode==="complete"){doc.text(`CPF: ${g.cpf?formatCPF(g.cpf):"Não informado"}   Telefone: ${g.phone||"Não informado"}`,20,y);y+=5;doc.text(`Pessoas: ${1+n(g.companions)}${g.notes?`   Observações: ${g.notes}`:""}`,20,y)}
+    y+=8;
+  });
+  if(y>275){doc.addPage();header()}
+  doc.setFont("helvetica","bold");doc.text(`Total de cadastros confirmados: ${rows.length}`,15,y+2);doc.text(`Total de pessoas: ${rows.reduce((a,g)=>a+1+n(g.companions),0)}`,15,y+8);
+  doc.save(`${(title||"cha_de_cozinha").toLowerCase().replace(/\s+/g,"_")}_confirmados.pdf`);$("modal").classList.add("hidden");toast("PDF gerado.");
+}
+
 async function auth(){const {data:{session}}=await db.auth.getSession();session?showApp():$("authScreen").classList.remove("hidden")}
 $("loginBtn").onclick=async()=>{const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});error?notice(error.message):showApp()};
 $("signupBtn").onclick=async()=>{const {error}=await db.auth.signUp({email:$("email").value.trim(),password:$("password").value});notice(error?error.message:"Conta criada. Confira seu e-mail se for solicitado.")};
@@ -23,28 +112,36 @@ $("refreshBtn").onclick=()=>loadAll(true);
 async function showApp(){$("authScreen").classList.add("hidden");$("app").classList.remove("hidden");await loadAll();subscribe()}
 async function loadAll(manual=false){
   $("syncText").textContent="Atualizando...";
-  const [s,g,t,z,f,p,c]=await Promise.all([
+  const [s,g,t,z,f,p,c,ss,sg,sf,st,sfi,ssc]=await Promise.all([
     db.from("settings").select("*").eq("key","general").single(),
     db.from("guests").select("*").order("name"),
     db.from("wedding_tables").select("*").order("name"),
     db.from("table_seats").select("*"),
     db.from("finance").select("*").order("created_at",{ascending:false}),
     db.from("gifts").select("*").order("created_at",{ascending:false}),
-    db.from("tasks").select("*").order("due_date",{ascending:true})
+    db.from("tasks").select("*").order("due_date",{ascending:true}),
+    db.from("shower_settings").select("*").eq("key","general").maybeSingle(),
+    db.from("shower_guests").select("*").order("full_name"),
+    db.from("shower_gifts").select("*").order("created_at",{ascending:false}),
+    db.from("shower_tasks").select("*").order("due_date",{ascending:true}),
+    db.from("shower_finance").select("*").order("created_at",{ascending:false}),
+    db.from("shower_schedule").select("*").order("position_index",{ascending:true})
   ]);
   if(s.error){alert("Erro ao carregar configurações: "+s.error.message);return}
   state.settings=s.data.value;state.guests=g.data||[];state.tables=(t.data||[]).sort((a,b)=>n(a.position_index)-n(b.position_index)||String(a.name).localeCompare(String(b.name),"pt-BR",{numeric:true}));state.seatsReady=!z.error;state.seats=z.data||[];state.finance=f.data||[];state.gifts=p.data||[];state.tasks=c.data||[];
+  state.showerSettings=ss.data?.value||{eventName:"Chá de Cozinha",eventDate:"",eventTime:"14:00",endTime:"18:00",location:"",address:"",mapsLink:"",budget:0,guestLimit:0,cpfRequired:false,showCpf:true,allowCompanions:true,maxCompanions:3,showTasks:true,showFinance:true,primaryColor:"#f05a83",secondaryColor:"#8b60e8",confirmMessage:"Presença confirmada!",declineMessage:"Sentiremos sua falta.",notes:""};
+  state.showerGuests=sg.data||[];state.showerGifts=sf.data||[];state.showerTasks=st.data||[];state.showerFinance=sfi.data||[];state.showerSchedule=ssc.data||[];
   render();$("syncText").textContent="Sincronizado";if(manual)toast("Dados atualizados.");
 }
 function subscribe(){
   if(state.channel) return;
   state.channel=db.channel("planner").on("postgres_changes",{event:"*",schema:"public"},()=>loadAll()).subscribe();
 }
-const pages=[["dashboard","⌂","Dashboard"],["guests","♟","Convidados"],["tables","◉","Mesas"],["finance","R$","Financeiro"],["gifts","◇","Presentes"],["tasks","✓","Checklist"],["settings","⚙","Configurações"]];
+const pages=[["dashboard","⌂","Dashboard"],["guests","♟","Convidados"],["tables","◉","Mesas"],["finance","R$","Financeiro"],["gifts","◇","Presentes"],["tasks","✓","Checklist"],["shower","🎁","Chá de Cozinha"],["settings","⚙","Configurações"]];
 function render(){
   $("nav").innerHTML=pages.map((p,i)=>`<button class="${i===0?"active":""}" data-page="${p[0]}">${p[1]} ${p[2]}</button>`).join("");
   document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>openPage(b.dataset.page,b.textContent.replace(/^[^\s]+\s/,"")));
-  renderBrand();renderDashboard();renderGuests();renderTables();renderFinance();renderGifts();renderTasks();renderSettings();
+  renderBrand();renderDashboard();renderGuests();renderTables();renderFinance();renderGifts();renderTasks();renderShower();renderSettings();
 }
 function openPage(id,title){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$("pageTitle").textContent=title;$("sidebar").classList.remove("open");window.scrollTo(0,0)}
 $("menuBtn").onclick=()=>$("sidebar").classList.toggle("open");
@@ -323,3 +420,36 @@ function csv(name,headers,rows){const text="\ufeff"+[headers,...rows].map(r=>r.m
 $("exportGuestsBtn").onclick=()=>csv("convidados_nahvio.csv",["Nome","Lado","Adultos","0 a 8","9 a 12","Equivalência em adultos","Lugares","Convite","Confirmação","Mesa","Observações"],guestFiltered().map(g=>[g.name,g.side,g.adults,g.children_0_8,g.children_9_12,weight(g),seats(g),g.invitation_status,g.rsvp_status,g.table_name||"",g.notes||""]));
 $("exportFinanceBtn").onclick=()=>csv("financeiro_nahvio.csv",["Descrição","Categoria","Previsto","Pago","Restante","Vencimento"],state.finance.map(x=>[x.description,x.category,x.planned,x.paid,n(x.planned)-n(x.paid),x.due_date||""]));
 auth();
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-shower-tab]");
+  if(!b)return;
+  document.querySelectorAll("[data-shower-tab]").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll(".shower-tab").forEach(x=>x.classList.toggle("active",x.id===b.dataset.showerTab));
+});
+["showerGuestSearch","showerGuestStatus"].forEach(id=>{if($(id))$(id).oninput=renderShowerGuests});
+["showerGiftSearch","showerGiftFilter"].forEach(id=>{if($(id))$(id).oninput=renderShowerGifts});
+if($("showerTaskFilter"))$("showerTaskFilter").oninput=renderShowerTasks;
+if($("showerFinanceSearch"))$("showerFinanceSearch").oninput=renderShowerFinance;
+if($("addShowerGuestBtn"))$("addShowerGuestBtn").onclick=()=>showerGuestModal();
+if($("addShowerGiftBtn"))$("addShowerGiftBtn").onclick=()=>showerGiftModal();
+if($("addShowerTaskBtn"))$("addShowerTaskBtn").onclick=()=>showerTaskModal();
+if($("addShowerFinanceBtn"))$("addShowerFinanceBtn").onclick=()=>showerFinanceModal();
+if($("addShowerScheduleBtn"))$("addShowerScheduleBtn").onclick=()=>showerScheduleModal();
+if($("exportShowerPdfBtn"))$("exportShowerPdfBtn").onclick=exportShowerPDF;
+if($("importWeddingGuestsBtn"))$("importWeddingGuestsBtn").onclick=()=>{
+  const options=state.guests.map(g=>`<label class="import-option"><input type="checkbox" value="${g.id}"><span>${esc(g.name)}</span><small>${esc(g.rsvp_status)}</small></label>`).join("");
+  modal("Importar convidados do casamento",`<p class="muted">Selecione quem também será convidado para o chá. Os cadastros serão independentes.</p><div class="import-list">${options}</div><div class="actions"><button class="primary" onclick="importWeddingGuests()">Importar selecionados</button></div>`);
+};
+window.importWeddingGuests=async()=>{
+  const ids=[...document.querySelectorAll(".import-option input:checked")].map(x=>x.value);
+  if(!ids.length)return toast("Selecione pelo menos uma pessoa.");
+  const existing=new Set(state.showerGuests.map(x=>x.full_name.toLowerCase()));
+  const rows=state.guests.filter(g=>ids.includes(g.id)&&!existing.has(g.name.toLowerCase())).map(g=>({full_name:g.name,cpf:null,phone:"",companions:Math.max(0,people(g)-1),rsvp_status:g.rsvp_status==="Recusado"?"Pendente":g.rsvp_status,notes:"Importado da lista do casamento"}));
+  if(!rows.length)return toast("Os selecionados já foram importados.");
+  const {error}=await db.from("shower_guests").insert(rows);if(error)alert(error.message);else{$("modal").classList.add("hidden");toast(`${rows.length} convidado(s) importado(s).`)}
+};
+if($("saveShowerSettingsBtn"))$("saveShowerSettingsBtn").onclick=async()=>{
+  const value={eventName:$("shName").value.trim()||"Chá de Cozinha",eventDate:$("shDate").value,eventTime:$("shTime").value,endTime:$("shEndTime").value,location:$("shLocation").value.trim(),address:$("shAddress").value.trim(),mapsLink:$("shMaps").value.trim(),budget:+$("shBudget").value,guestLimit:+$("shGuestLimit").value,cpfRequired:$("shCpfRequired").value==="true",showCpf:$("shShowCpf").value==="true",allowCompanions:$("shAllowCompanions").value==="true",maxCompanions:+$("shMaxCompanions").value,showTasks:$("shShowTasks").value==="true",showFinance:$("shShowFinance").value==="true",primaryColor:$("shPrimaryColor").value,secondaryColor:$("shSecondaryColor").value,confirmMessage:$("shConfirmMessage").value,declineMessage:$("shDeclineMessage").value,notes:$("shNotes").value};
+  const {error}=await db.from("shower_settings").upsert({key:"general",value,updated_at:new Date().toISOString()},{onConflict:"key"});error?alert(error.message):toast("Configurações do chá salvas.");
+};

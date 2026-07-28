@@ -28,6 +28,9 @@ function cleanPastedName(value){
   return String(value||"")
     .replace(/^\s*\[\d{1,2}:\d{2}[^\]]*\]\s*[^:]{1,40}:\s*/,"")
     .replace(/\b(?:CPF|C\.?P\.?F\.?)\s*[:=\-]?\s*/ig,"")
+    .replace(/^\s*nome\s*[.:=\-]?\s*/i,"")
+    .replace(/\s*[-–—]?\s*\d{2}\/\d{2}\/\d{4}\s*$/,"")
+    .replace(/[.]+$/g,"")
     .replace(/^[\s:;,\-=]+|[\s:;,\-=]+$/g,"")
     .replace(/\s{2,}/g," ")
     .trim();
@@ -36,55 +39,77 @@ function looksLikeGuestName(value){
   const name=cleanPastedName(value);
   if(!name||name.length<3||/\d/.test(name))return false;
   const lower=name.toLowerCase();
-  if(/^(oi+|olá|boa (tarde|noite|dia)|tudo bem|abraço|obrigad[oa]|confirmad[oa]|cpf)$/i.test(lower))return false;
-  return !/(confirmar|confirmado|confirmação|presença|convite|prazer|agradecemos|desculpa|esqueci|horário|vai ser|nós vamos|estou entrando|delicia)/i.test(lower);
+  if(/^(oi+|oie+|olá|boa (tarde|noite|dia)|tudo bem|abraço|ok|obrigad[oa]|confirmad[oa]|cpf)$/i.test(lower))return false;
+  return !/(boa tarde|boa noite|bom dia|confirmar|confirmando|confirmado|confirmação|presença|meu cpf|convite|prazer|agradecemos|desculpa|esqueci|horário|vai ser|nós vamos|estou entrando|delicia|pelo carinho)/i.test(lower);
 }
 function pastedFirstName(value){
   return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/\s+/)[0];
 }
 function parsePastedGuests(text){
   const cpfPattern=/(?<!\d)(\d{3}[\s.\-]?\d{3}[\s.\-]?\d{3}[\s.\-]?\d{2})(?!\d)/g;
-  const rows=[],pending=[];
+  const header=/^\s*\[\d{1,2}:\d{2}[^\]]*\]\s*[^:]{1,40}:\s*/;
+  const messages=[];
   String(text||"").replace(/\r/g,"").split("\n").forEach(raw=>{
-    const line=raw.replace(/^\s*\[\d{1,2}:\d{2}[^\]]*\]\s*[^:]{1,40}:\s*/,"").trim();
-    if(!line)return;
-    const matches=[...line.matchAll(cpfPattern)];
-    if(!matches.length){
-      const candidate=cleanPastedName(line);
-      if(looksLikeGuestName(candidate)){
-        const orphan=rows.find(row=>!row.name);
+    if(header.test(raw))messages.push([raw.replace(header,"").trim()]);
+    else if(messages.length)messages[messages.length-1].push(raw.trim());
+    else messages.push([raw.trim()]);
+  });
+  const rows=[];
+  messages.forEach(lines=>{
+    const local=[],pending=[];
+    lines.filter(Boolean).forEach(line=>{
+      const matches=[...line.matchAll(cpfPattern)];
+      if(!matches.length){
+        const candidate=cleanPastedName(line);
+        if(!looksLikeGuestName(candidate))return;
+        const orphan=local.find(row=>!row.name);
         if(orphan)orphan.name=candidate;
         else{
           const first=pastedFirstName(candidate);
-          if(!pending.some(value=>pastedFirstName(value)===first))pending.push(candidate);
+          const isShortAlias=candidate.split(/\s+/).length===1&&pending.some(value=>pastedFirstName(value)===first);
+          if(!isShortAlias)pending.push(candidate);
         }
+        return;
       }
-      return;
-    }
-    matches.forEach((match,index)=>{
-      const start=match.index||0,end=start+match[0].length;
-      const previousEnd=index?((matches[index-1].index||0)+matches[index-1][0].length):0;
-      const nextStart=matches[index+1]?.index??line.length;
-      const before=cleanPastedName(line.slice(previousEnd,start));
-      const after=cleanPastedName(line.slice(end,nextStart));
-      let name=looksLikeGuestName(before)?before:looksLikeGuestName(after)?after:"";
-      if(name&&pending.length){
-        const first=pastedFirstName(name);
-        const pendingIndex=pending.findIndex(value=>pastedFirstName(value)===first);
-        if(pendingIndex>=0)name=pending.splice(pendingIndex,1)[0];
-      }
-      if(!name&&pending.length)name=pending.shift();
-      rows.push({name,cpf:onlyDigits(match[0])});
+      matches.forEach((match,index)=>{
+        const start=match.index||0,end=start+match[0].length;
+        const previousEnd=index?((matches[index-1].index||0)+matches[index-1][0].length):0;
+        const nextStart=matches[index+1]?.index??line.length;
+        const before=cleanPastedName(line.slice(previousEnd,start));
+        const after=cleanPastedName(line.slice(end,nextStart));
+        const beforeName=looksLikeGuestName(before)?before:"";
+        const afterName=looksLikeGuestName(after)?after:"";
+        let name=beforeName;
+        if(!name&&pending.length)name=pending.shift();
+        else if(!name&&afterName)name=afterName;
+        if(name&&pending.length&&name.split(/\s+/).length===1){
+          const pendingIndex=pending.findIndex(value=>pastedFirstName(value)===pastedFirstName(name));
+          if(pendingIndex>=0)name=pending.splice(pendingIndex,1)[0];
+        }
+        local.push({name,cpf:onlyDigits(match[0])});
+        if(!beforeName&&name!==afterName&&afterName)pending.push(afterName);
+      });
     });
+    pending.forEach(name=>local.push({name,cpf:""}));
+    rows.push(...local);
   });
-  pending.forEach(name=>rows.push({name,cpf:""}));
+  for(let i=0;i<rows.length-1;i++){
+    if(!rows[i].name&&rows[i].cpf&&rows[i+1].name&&!rows[i+1].cpf){
+      rows[i].name=rows[i+1].name;
+      rows.splice(i+1,1);
+    }
+  }
   return rows;
 }
 function renderPastedGuestPreview(rows){
   const existingNames=new Set(state.showerGuests.map(x=>String(x.full_name||"").trim().toLowerCase()));
   const existingCpfs=new Set(state.showerGuests.map(x=>onlyDigits(x.cpf)).filter(Boolean));
+  const pastedNames=new Set(),pastedCpfs=new Set();
   $("pastedGuestPreview").innerHTML=rows.map(row=>{
-    const duplicate=existingNames.has(String(row.name||"").trim().toLowerCase())||existingCpfs.has(onlyDigits(row.cpf));
+    const nameKey=String(row.name||"").trim().toLowerCase(),cpfKey=onlyDigits(row.cpf);
+    const duplicate=existingNames.has(nameKey)||existingCpfs.has(cpfKey)||pastedNames.has(nameKey)||pastedCpfs.has(cpfKey);
+    if(nameKey)pastedNames.add(nameKey);
+    if(cpfKey)pastedCpfs.add(cpfKey);
     return `<div class="paste-guest-row" data-paste-row>
       <label>Nome completo<input class="paste-name" value="${esc(row.name)}" placeholder="Nome completo"></label>
       <label>CPF<input class="paste-cpf" value="${esc(formatCPF(row.cpf))}" inputmode="numeric" maxlength="14" oninput="this.value=formatCPF(this.value)"></label>
@@ -110,14 +135,31 @@ window.openPasteShowerGuests=()=>modal("Colar nomes e CPFs",`
 window.savePastedShowerGuests=async()=>{
   const existingNames=new Set(state.showerGuests.map(x=>String(x.full_name||"").trim().toLowerCase()));
   const existingCpfs=new Set(state.showerGuests.map(x=>onlyDigits(x.cpf)).filter(Boolean));
-  const rows=[...document.querySelectorAll("[data-paste-row]")].map(row=>({
+  const candidates=[...document.querySelectorAll("[data-paste-row]")].map(row=>({
     full_name:row.querySelector(".paste-name").value.trim(),
     cpf:onlyDigits(row.querySelector(".paste-cpf").value)
-  })).filter(x=>x.full_name&&validCPF(x.cpf)&&!existingNames.has(x.full_name.toLowerCase())&&!existingCpfs.has(x.cpf))
-    .map(x=>({...x,phone:"",companions:0,rsvp_status:"Confirmado",notes:"Importado de mensagem"}));
-  if(!rows.length)return toast("Não há pessoas válidas e novas para salvar.");
-  const {error}=await db.from("shower_guests").insert(rows);
-  if(error)alert(error.message);else{$("modal").classList.add("hidden");toast(`${rows.length} pessoa${rows.length===1?"":"s"} salva${rows.length===1?"":"s"}.`);await loadAll()}
+  }));
+  const rows=[],seenNames=new Set(existingNames),seenCpfs=new Set(existingCpfs);
+  let repeated=0,invalid=0;
+  candidates.forEach(x=>{
+    const nameKey=x.full_name.toLowerCase();
+    if(!x.full_name||!looksLikeGuestName(x.full_name)||!validCPF(x.cpf)){invalid++;return}
+    if(seenNames.has(nameKey)||seenCpfs.has(x.cpf)){repeated++;return}
+    seenNames.add(nameKey);seenCpfs.add(x.cpf);
+    rows.push({...x,phone:"",companions:0,rsvp_status:"Confirmado",notes:"Importado de mensagem"});
+  });
+  if(!rows.length)return toast(repeated?"Os nomes completos ou CPFs informados já estão cadastrados.":"Não há pessoas válidas para salvar.");
+  let saved=0,skipped=0;
+  for(const row of rows){
+    const {error}=await db.from("shower_guests").insert(row);
+    if(!error)saved++;
+    else if(error.code==="23505"||/duplicate key|unique constraint/i.test(error.message||""))skipped++;
+    else return alert("Não foi possível salvar todos os convidados. Tente novamente.");
+  }
+  $("modal").classList.add("hidden");
+  const notSaved=repeated+skipped;
+  toast(`${saved} pessoa${saved===1?"":"s"} salva${saved===1?"":"s"}${notSaved?` • ${notSaved} repetida${notSaved===1?"":"s"} não salva${notSaved===1?"":"s"}`:""}${invalid?` • ${invalid} para conferir`:""}.`);
+  await loadAll();
 };
 function showerGuestFiltered(){
   const q=($("showerGuestSearch")?.value||"").toLowerCase(),st=$("showerGuestStatus")?.value||"";

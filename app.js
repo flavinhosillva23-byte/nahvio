@@ -24,6 +24,101 @@ function validCPF(v){
   const calc=len=>{let sum=0;for(let i=0;i<len;i++)sum+=+cpf[i]*(len+1-i);const r=(sum*10)%11;return r===10?0:r};
   return calc(9)===+cpf[9]&&calc(10)===+cpf[10];
 }
+function cleanPastedName(value){
+  return String(value||"")
+    .replace(/^\s*\[\d{1,2}:\d{2}[^\]]*\]\s*[^:]{1,40}:\s*/,"")
+    .replace(/\b(?:CPF|C\.?P\.?F\.?)\s*[:=\-]?\s*/ig,"")
+    .replace(/^[\s:;,\-=]+|[\s:;,\-=]+$/g,"")
+    .replace(/\s{2,}/g," ")
+    .trim();
+}
+function looksLikeGuestName(value){
+  const name=cleanPastedName(value);
+  if(!name||name.length<3||/\d/.test(name))return false;
+  const lower=name.toLowerCase();
+  if(/^(oi+|olá|boa (tarde|noite|dia)|tudo bem|abraço|obrigad[oa]|confirmad[oa]|cpf)$/i.test(lower))return false;
+  return !/(confirmar|confirmado|confirmação|presença|convite|prazer|agradecemos|desculpa|esqueci|horário|vai ser|nós vamos|estou entrando|delicia)/i.test(lower);
+}
+function pastedFirstName(value){
+  return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().split(/\s+/)[0];
+}
+function parsePastedGuests(text){
+  const cpfPattern=/(?<!\d)(\d{3}[\s.\-]?\d{3}[\s.\-]?\d{3}[\s.\-]?\d{2})(?!\d)/g;
+  const rows=[],pending=[];
+  String(text||"").replace(/\r/g,"").split("\n").forEach(raw=>{
+    const line=raw.replace(/^\s*\[\d{1,2}:\d{2}[^\]]*\]\s*[^:]{1,40}:\s*/,"").trim();
+    if(!line)return;
+    const matches=[...line.matchAll(cpfPattern)];
+    if(!matches.length){
+      const candidate=cleanPastedName(line);
+      if(looksLikeGuestName(candidate)){
+        const orphan=rows.find(row=>!row.name);
+        if(orphan)orphan.name=candidate;
+        else{
+          const first=pastedFirstName(candidate);
+          if(!pending.some(value=>pastedFirstName(value)===first))pending.push(candidate);
+        }
+      }
+      return;
+    }
+    matches.forEach((match,index)=>{
+      const start=match.index||0,end=start+match[0].length;
+      const previousEnd=index?((matches[index-1].index||0)+matches[index-1][0].length):0;
+      const nextStart=matches[index+1]?.index??line.length;
+      const before=cleanPastedName(line.slice(previousEnd,start));
+      const after=cleanPastedName(line.slice(end,nextStart));
+      let name=looksLikeGuestName(before)?before:looksLikeGuestName(after)?after:"";
+      if(name&&pending.length){
+        const first=pastedFirstName(name);
+        const pendingIndex=pending.findIndex(value=>pastedFirstName(value)===first);
+        if(pendingIndex>=0)name=pending.splice(pendingIndex,1)[0];
+      }
+      if(!name&&pending.length)name=pending.shift();
+      rows.push({name,cpf:onlyDigits(match[0])});
+    });
+  });
+  pending.forEach(name=>rows.push({name,cpf:""}));
+  return rows;
+}
+function renderPastedGuestPreview(rows){
+  const existingNames=new Set(state.showerGuests.map(x=>String(x.full_name||"").trim().toLowerCase()));
+  const existingCpfs=new Set(state.showerGuests.map(x=>onlyDigits(x.cpf)).filter(Boolean));
+  $("pastedGuestPreview").innerHTML=rows.map(row=>{
+    const duplicate=existingNames.has(String(row.name||"").trim().toLowerCase())||existingCpfs.has(onlyDigits(row.cpf));
+    return `<div class="paste-guest-row" data-paste-row>
+      <label>Nome completo<input class="paste-name" value="${esc(row.name)}" placeholder="Nome completo"></label>
+      <label>CPF<input class="paste-cpf" value="${esc(formatCPF(row.cpf))}" inputmode="numeric" maxlength="14" oninput="this.value=formatCPF(this.value)"></label>
+      <span class="paste-status ${duplicate?"duplicate":validCPF(row.cpf)&&row.name?"ok":"warning"}">${duplicate?"Já cadastrado":validCPF(row.cpf)&&row.name?"Pronto":"Confira"}</span>
+      <button type="button" class="danger paste-remove" aria-label="Remover pessoa">Excluir</button>
+    </div>`;
+  }).join("")||`<div class="notice">Nenhum nome com CPF foi identificado. Confira o texto e tente novamente.</div>`;
+  document.querySelectorAll(".paste-remove").forEach(button=>button.onclick=()=>button.closest("[data-paste-row]").remove());
+  $("pastedGuestCount").textContent=`${rows.length} pessoa${rows.length===1?"":"s"} encontrada${rows.length===1?"":"s"}`;
+}
+window.openPasteShowerGuests=()=>modal("Colar nomes e CPFs",`
+  <p class="muted">Cole a mensagem inteira do WhatsApp. O sistema vai ignorar as saudações e separar cada nome do respectivo CPF.</p>
+  <label class="paste-source-label">Texto para importar
+    <textarea id="pastedGuestText" class="paste-source" placeholder="Cole aqui os nomes e CPFs..."></textarea>
+  </label>
+  <div class="import-actions-row">
+    <button type="button" id="analyzePastedGuestsBtn" class="secondary">Separar automaticamente</button>
+    <span id="pastedGuestCount">0 pessoas encontradas</span>
+  </div>
+  <div id="pastedGuestPreview" class="paste-preview"></div>
+  <div class="actions"><button type="button" class="primary" onclick="savePastedShowerGuests()">Salvar pessoas válidas</button></div>
+`);
+window.savePastedShowerGuests=async()=>{
+  const existingNames=new Set(state.showerGuests.map(x=>String(x.full_name||"").trim().toLowerCase()));
+  const existingCpfs=new Set(state.showerGuests.map(x=>onlyDigits(x.cpf)).filter(Boolean));
+  const rows=[...document.querySelectorAll("[data-paste-row]")].map(row=>({
+    full_name:row.querySelector(".paste-name").value.trim(),
+    cpf:onlyDigits(row.querySelector(".paste-cpf").value)
+  })).filter(x=>x.full_name&&validCPF(x.cpf)&&!existingNames.has(x.full_name.toLowerCase())&&!existingCpfs.has(x.cpf))
+    .map(x=>({...x,phone:"",companions:0,rsvp_status:"Confirmado",notes:"Importado de mensagem"}));
+  if(!rows.length)return toast("Não há pessoas válidas e novas para salvar.");
+  const {error}=await db.from("shower_guests").insert(rows);
+  if(error)alert(error.message);else{$("modal").classList.add("hidden");toast(`${rows.length} pessoa${rows.length===1?"":"s"} salva${rows.length===1?"":"s"}.`);await loadAll()}
+};
 function showerGuestFiltered(){
   const q=($("showerGuestSearch")?.value||"").toLowerCase(),st=$("showerGuestStatus")?.value||"";
   return state.showerGuests.filter(g=>(`${g.full_name} ${g.cpf||""} ${g.phone||""}`).toLowerCase().includes(q)&&(!st||g.rsvp_status===st));
@@ -656,6 +751,10 @@ document.addEventListener("click",e=>{
 if($("showerTaskFilter"))$("showerTaskFilter").oninput=renderShowerTasks;
 if($("showerFinanceSearch"))$("showerFinanceSearch").oninput=renderShowerFinance;
 if($("addShowerGuestBtn"))$("addShowerGuestBtn").onclick=()=>showerGuestModal();
+if($("pasteShowerGuestsBtn"))$("pasteShowerGuestsBtn").onclick=()=>{
+  openPasteShowerGuests();
+  $("analyzePastedGuestsBtn").onclick=()=>renderPastedGuestPreview(parsePastedGuests($("pastedGuestText").value));
+};
 if($("addShowerGiftBtn"))$("addShowerGiftBtn").onclick=()=>showerGiftModal();
 if($("addShowerTaskBtn"))$("addShowerTaskBtn").onclick=()=>showerTaskModal();
 if($("addShowerFinanceBtn"))$("addShowerFinanceBtn").onclick=()=>showerFinanceModal();
@@ -743,5 +842,3 @@ if($("assistantQuestion"))$("assistantQuestion").onkeydown=e=>{if(e.key==="Enter
 document.querySelectorAll("[data-assistant-question]").forEach(b=>b.onclick=()=>{$("assistantQuestion").value=b.dataset.assistantQuestion;answerAssistant()});
 if($("ceremonyFullscreenBtn"))$("ceremonyFullscreenBtn").onclick=()=>document.body.classList.toggle("ceremony-display");
 setInterval(updateCeremony,30000);
-
-

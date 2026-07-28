@@ -361,3 +361,18 @@ body.ceremony-display .sidebar,body.ceremony-display .topbar,body.ceremony-displ
   .sidebar{width:min(91vw,320px)!important}
   .top-title{min-width:0}.top-title>div{min-width:0}.top h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* Importação rápida de convidados por texto */
+.paste-source-label{display:grid;gap:7px;margin-top:15px}
+.paste-source{min-height:150px;resize:vertical}
+.paste-preview{display:grid;gap:9px;max-height:390px;overflow:auto;margin-top:12px}
+.paste-guest-row{display:grid;grid-template-columns:minmax(210px,1fr) 160px auto auto;gap:9px;align-items:end;padding:11px;border:1px solid #e5ddd7;border-radius:12px;background:#fff}
+.paste-status{align-self:center;padding:6px 9px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+.paste-status.ok{color:#17603f;background:#e4f5ec}
+.paste-status.warning{color:#76591d;background:#fff3d7}
+.paste-status.duplicate{color:#7b3f3f;background:#f8e7e7}
+@media (max-width:580px){
+  .paste-guest-row{grid-template-columns:1fr 1fr}
+  .paste-status{justify-self:start}
+  .paste-remove{width:100%}
+}

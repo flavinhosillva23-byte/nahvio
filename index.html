@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#123f33">
+  <title>Wedding Planner</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <section id="setupError" class="login hidden">
+    <div class="login-card">
+      <span class="eyebrow">Configuração necessária</span>
+      <h1>Conecte o Supabase</h1>
+      <p>Abra o arquivo <strong>config.js</strong> e informe a URL e a chave pública.</p>
+    </div>
+  </section>
+
+  <section id="authScreen" class="login hidden">
+    <div class="login-card">
+      <span class="eyebrow">Área privada</span>
+      <h1>Flávio &amp; Nathália</h1>
+      <p class="muted">Entre para acessar o planejamento compartilhado.</p>
+      <div id="authNotice" class="notice hidden"></div>
+      <div class="form one">
+        <label>E-mail<input id="email" type="email" autocomplete="email"></label>
+        <label>Senha<input id="password" type="password" autocomplete="current-password"></label>
+      </div>
+      <div class="actions">
+        <button id="signupBtn" class="secondary">Criar conta</button>
+        <button id="loginBtn" class="primary">Entrar</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="shell hidden">
+    <aside id="sidebar" class="sidebar">
+        <button id="mobileMenuCloseBtn" type="button" class="mobile-menu-close" aria-label="Fechar menu">×</button>
+      <div class="brand">
+        <small id="brandTitle">Wedding Planner</small>
+        <h1 id="brandCouple">Flávio &amp; Nathália</h1>
+        <p id="brandDate"></p>
+      </div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-foot">
+        <span class="sync-dot"></span><span id="syncText">Sincronizado</span>
+      </div>
+    </aside>
+      <button id="sidebarOverlay" type="button" class="sidebar-overlay" aria-label="Fechar menu" tabindex="-1"></button>
+
+    <main>
+      <header class="top">
+        <div class="top-title">
+          <button id="menuBtn" type="button" class="secondary menu mobile-menu-btn" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+          <div>
+            <h2 id="pageTitle">Dashboard</h2>
+            <p class="muted">Planejamento compartilhado em tempo real</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="exportCurrentPageBtn" class="secondary">Exportar esta área em PDF</button>
+          <button id="refreshBtn" class="secondary">Atualizar</button>
+          <button id="logoutBtn" class="secondary">Sair</button>
+        </div>
+      </header>
+
+
+      <section id="dashboard" class="page active premium-dashboard">
+        <div class="premium-hero">
+          <div class="photo premium-photo">
+            <img src="assets/casal.jpg" alt="Flávio e Nathália">
+            <div class="photo-decor decor-heart">♡</div>
+            <div class="photo-copy premium-photo-copy">
+              <span class="script-label">Nosso grande dia!</span>
+              <h3 id="heroCouple"></h3>
+              <p>Tiago 1:17 • “Toda boa dádiva e todo presente perfeito vem de cima”</p>
+            </div>
+          </div>
+
+          <div class="count premium-count">
+            <div class="count-main">
+              <div>
+                <span class="eyebrow dark-eye">♡ Faltam ♡</span>
+                <div class="giant-days"><strong id="daysBig">0</strong><em>dias</em></div>
+                <h3>PARA O NOSSO SIM!</h3>
+                <div class="date-chip">▣ <span id="weddingLabel"></span></div>
+              </div>
+
+              <div class="count-grid premium-count-grid">
+                <div class="time pink"><span class="time-icon">▣</span><strong id="days">0</strong><span>Dias</span></div>
+                <div class="time yellow"><span class="time-icon">◷</span><strong id="hours">0</strong><span>Horas</span></div>
+                <div class="time green"><span class="time-icon">⏱</span><strong id="minutes">0</strong><span>Minutos</span></div>
+                <div class="time blue"><span class="time-icon">ϟ</span><strong id="seconds">0</strong><span>Segundos</span></div>
+              </div>
+            </div>
+
+            <div class="journey">
+              <div class="journey-head"><span>Jornada até o casamento</span><strong id="journeyPercent">0% concluído</strong></div>
+              <div class="journey-bar"><span id="journeyBar"></span><i>♥</i></div>
+              <p>Cada dia nos aproxima do momento mais especial das nossas vidas. ♡</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis premium-kpis">
+          <article class="card kpi premium-kpi green-card"><div class="kpi-icon">👥</div><div><span>Convidados</span><strong id="kPeople">0</strong><small id="kConfirmed"></small></div></article>
+          <article class="card kpi premium-kpi yellow-card"><div class="kpi-icon">💌</div><div><span>Confirmações</span><strong id="kRsvp">0%</strong><small id="kPending"></small></div></article>
+          <article class="card kpi premium-kpi blue-card"><div class="kpi-icon">🪑</div><div><span>Mesas</span><strong id="kTables">0 de 0</strong><small id="kTableStatus"></small></div></article>
+          <article class="card kpi premium-kpi purple-card"><div class="kpi-icon">＄</div><div><span>Financeiro</span><strong id="kBalance">R$ 0,00</strong><small id="kPaid"></small></div></article>
+        </div>
+
+        <div class="premium-info-grid">
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Confirmações</span><small id="confirmChip">0 famílias</small></div>
+            <div class="donut-row">
+              <div id="confirmDonut" class="donut"><div><strong id="confirmDonutValue">0%</strong><small>das famílias<br>confirmadas</small></div></div>
+              <div id="confirmLegend" class="legend-list"></div>
+            </div>
+            <div class="hidden"><h3 id="confirmTitle"></h3><div class="bar"><span id="confirmBar"></span></div><p id="confirmDetails"></p></div>
+          </article>
+
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Composição da lista</span></div>
+            <div id="categoryBreakdown" class="stats-list"></div>
+            <p id="categorySummary" class="hidden"></p>
+          </article>
+
+          <article class="card premium-panel">
+            <div class="panel-title"><span>♟ Organização</span></div>
+            <div id="tableBreakdown" class="stats-list"></div>
+            <p id="tableSummary" class="hidden"></p>
+          </article>
+
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Checklist</span></div>
+            <div class="donut-row">
+              <div id="taskDonut" class="donut task-donut"><div><strong id="taskDonutValue">0%</strong><small>concluído</small></div></div>
+              <div id="taskLegend" class="legend-list"></div>
+            </div>
+            <div class="hidden"><div class="bar"><span id="taskBar"></span></div><p id="taskSummary"></p></div>
+          </article>
+        </div>
+
+        <div class="premium-bottom-grid">
+          <article class="card mini-panel">
+            <div class="panel-title pink-title"><span>♡ Próximas tarefas</span></div>
+            <div id="nextTasksList" class="compact-list"></div>
+          </article>
+
+          <article class="card mini-panel">
+            <div class="panel-title blue-title"><span>▣ Próximos pagamentos</span></div>
+            <div id="nextPaymentsList" class="compact-list"></div>
+          </article>
+
+          <article class="card mini-panel">
+            <div class="panel-title green-title"><span>Últimas confirmações</span></div>
+            <div id="latestConfirmationsList" class="compact-list"></div>
+          </article>
+
+          <article class="card mini-panel">
+            <div class="panel-title purple-title"><span>Resumo financeiro</span></div>
+            <div class="finance-mini">
+              <div id="financeDonut" class="finance-donut"></div>
+              <div id="financeLegend" class="legend-list"></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card alerts-card premium-alerts">
+          <div class="section-head"><div><span class="eyebrow">Atenção</span><h3>Próximos passos</h3></div></div>
+          <div id="dashboardAlerts" class="alerts"></div>
+        </article>
+      </section>
+
+      <section id="guests" class="page">
+        <div class="toolbar">
+          <input id="guestSearch" class="search" placeholder="Pesquisar nome ou família">
+          <select id="guestSideFilter"><option value="">Todos os lados</option><option>Flávio</option><option>Nathália</option><option>Ambos</option></select>
+          <select id="guestStatusFilter"><option value="">Todas as confirmações</option><option>Pendente</option><option>Confirmado</option><option>Recusado</option></select>
+          <select id="guestInviteFilter"><option value="">Todos os convites</option><option>Não enviado</option><option>Enviado</option></select>
+          <button id="exportGuestsBtn" class="secondary">Exportar CSV</button>
+          <button id="addGuestBtn" class="primary">+ Novo convidado</button>
+        </div>
+        <div id="guestSummary" class="summary-strip"></div>
+        <div class="card table-wrap">
+          <table>
+            <thead><tr><th>Nome ou família</th><th>Lado</th><th>Adultos</th><th>0 a 8</th><th>9 a 12</th><th>Equivalência em adultos</th><th>Lugares</th><th>Convite</th><th>Confirmação</th><th>Mesa</th><th>Ações</th></tr></thead>
+            <tbody id="guestRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tables" class="page tables-page">
+        <div class="tables-toolbar card">
+          <div>
+            <span class="eyebrow">Mapa do salão</span>
+            <h3>Organização das mesas</h3>
+            <p class="muted">Clique em cada lugar para escolher uma pessoa. Arraste as mesas para mudar a ordem no mapa.</p>
+          </div>
+          <div class="table-actions">
+            <button id="create15TablesBtn" class="secondary">Criar 15 mesas</button>
+            <button id="addTableBtn" class="primary">+ Nova mesa</button>
+          </div>
+        </div>
+        <div id="tablesSetupNotice" class="notice hidden"></div>
+        <div id="tableMapSummary" class="summary-strip"></div>
+        <div id="tableCards" class="room-map"></div>
+      </section>
+
+      <section id="finance" class="page">
+        <div class="toolbar">
+          <input id="financeSearch" class="search" placeholder="Pesquisar descrição ou categoria">
+          <button id="exportFinanceBtn" class="secondary">Exportar CSV</button>
+          <button id="addFinanceBtn" class="primary">+ Novo lançamento</button>
+        </div>
+        <div id="financeSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Previsto</th><th>Pago</th><th>Restante</th><th>Vencimento</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="financeRows"></tbody></table></div>
+      </section>
+
+      <section id="gifts" class="page">
+        <div class="toolbar"><input id="giftSearch" class="search" placeholder="Pesquisar presente ou pessoa"><button id="addGiftBtn" class="primary">+ Novo presente</button></div>
+        <div id="giftSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Presente</th><th>Quem deu</th><th>Recebido</th><th>Agradecimento</th><th>Ações</th></tr></thead><tbody id="giftRows"></tbody></table></div>
+      </section>
+
+      <section id="tasks" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Organização do casamento</span><h3>Checklist profissional</h3><p>Defina responsáveis e participantes usando a lista de convidados.</p></div></div>
+        <div class="toolbar">
+          <select id="taskFilter"><option value="">Todas as tarefas</option><option value="open">Pendentes</option><option value="done">Concluídas</option><option value="late">Atrasadas</option></select>
+          <select id="taskAreaFilter"><option value="">Todas as áreas</option></select>
+          <select id="taskResponsibleFilter"><option value="">Todos os responsáveis</option><option value="none">Sem responsável</option></select>
+          <button id="seedChecklistBtn" class="secondary">Carregar checklist e funções</button>
+          <button id="addTaskBtn" class="primary">+ Nova tarefa</button>
+        </div>
+        <div id="taskSummaryTop" class="summary-strip"></div>
+        <div id="taskList" class="card task-list"></div>
+      </section>
+
+
+
+      <section id="shower-dashboard" class="page shower-page">
+        <div class="shower-hero card">
+          <div>
+            <span class="eyebrow">Evento especial</span>
+            <h3 id="showerTitle">Chá de Cozinha</h3>
+            <p id="showerEventInfo" class="muted"></p>
+          </div>
+          <div class="shower-count"><strong id="showerDays">0</strong><span>dias para o chá</span></div>
+        </div>
+
+        <div class="kpis premium-kpis">
+          <article class="card kpi premium-kpi green-card"><div class="kpi-icon">👥</div><div><span>Convidados</span><strong id="showerKGuests">0</strong><small id="showerKConfirmed"></small></div></article>
+          <article class="card kpi premium-kpi yellow-card"><div class="kpi-icon">🎁</div><div><span>Presentes</span><strong id="showerKGifts">0</strong><small id="showerKGiftStatus"></small></div></article>
+          <article class="card kpi premium-kpi purple-card"><div class="kpi-icon">✓</div><div><span>Checklist</span><strong id="showerKTasks">0%</strong><small id="showerKTaskStatus"></small></div></article>
+          <article class="card kpi premium-kpi blue-card"><div class="kpi-icon">R$</div><div><span>Financeiro</span><strong id="showerKFinance">R$ 0,00</strong><small id="showerKFinanceStatus"></small></div></article>
+        </div>
+
+        <div class="shower-grid">
+          <article class="card premium-panel">
+            <div class="panel-title"><span>Próximas tarefas</span></div>
+            <div id="showerNextTasks" class="compact-list"></div>
+          </article>
+          <article class="card premium-panel">
+            <div class="panel-title pink-title"><span>Brincadeiras</span></div>
+            <div id="showerGameBreakdown" class="stats-list"></div>
+          </article>
+          <article class="card premium-panel">
+            <div class="panel-title blue-title"><span>Próximos horários</span></div>
+            <div id="showerNextSchedule" class="compact-list"></div>
+          </article>
+        </div>
+
+        <div class="quick-links card">
+          <div><span class="eyebrow">Acesso rápido</span><h3>O que você deseja organizar?</h3></div>
+          <div class="quick-link-grid">
+            <button data-open-page="shower-guests">👥 Convidados</button>
+            <button data-open-page="shower-gifts">🎁 Presentes</button>
+            <button data-open-page="shower-games">🎲 Brincadeiras</button>
+            <button data-open-page="shower-tasks">✓ Checklist</button>
+            <button data-open-page="shower-schedule">🕒 Cronograma</button>
+            <button data-open-page="shower-settings">⚙ Configurações</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="shower-guests" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Convidados</h3><p>Cadastro, confirmação, CPF e lista para a portaria.</p></div></div>
+        <div class="toolbar">
+          <input id="showerGuestSearch" class="search" placeholder="Pesquisar nome, CPF ou telefone">
+          <select id="showerGuestStatus"><option value="">Todos os status</option><option>Pendente</option><option>Confirmado</option><option>Recusado</option></select>
+          <button id="pasteShowerGuestsBtn" class="secondary">Colar nomes e CPFs</button>
+          <button id="importWeddingGuestsBtn" class="secondary">Importar do casamento</button>
+          <button id="exportShowerPdfBtn" class="secondary">Exportar confirmados</button>
+          <button id="addShowerGuestBtn" class="primary">+ Novo convidado</button>
+        </div>
+        <div id="showerGuestSummary" class="summary-strip"></div>
+        <div class="card table-wrap">
+          <table><thead><tr><th>Nome completo</th><th>CPF</th><th>Telefone</th><th>Pessoas</th><th>Confirmação</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="showerGuestRows"></tbody></table>
+        </div>
+      </section>
+
+      <section id="shower-gifts" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Presentes</h3><p>Acompanhe os itens disponíveis, reservados e recebidos.</p></div></div>
+        <div class="toolbar"><input id="showerGiftSearch" class="search" placeholder="Pesquisar presente ou pessoa"><select id="showerGiftFilter"><option value="">Todos os status</option><option>Disponível</option><option>Reservado</option><option>Recebido</option></select><button id="addShowerGiftBtn" class="primary">+ Novo presente</button></div>
+        <div id="showerGiftSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Presente</th><th>Categoria</th><th>Status</th><th>Quem reservou/deu</th><th>Valor estimado</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="showerGiftRows"></tbody></table></div>
+      </section>
+
+      <section id="shower-tasks" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Checklist</h3><p>Uma tela limpa para acompanhar somente as tarefas.</p></div></div>
+        <div class="toolbar"><select id="showerTaskFilter"><option value="">Todas</option><option value="open">Pendentes</option><option value="done">Concluídas</option><option value="late">Atrasadas</option></select><button id="addShowerTaskBtn" class="primary">+ Nova tarefa</button></div>
+        <div id="showerTaskSummary" class="summary-strip"></div>
+        <div id="showerTaskList" class="card task-list"></div>
+      </section>
+
+      <section id="shower-games" class="page shower-page">
+        <div class="page-intro">
+          <div><span class="eyebrow">Chá de Cozinha</span><h3>Brincadeiras</h3><p>Planeje a ordem, os materiais, o responsável e o roteiro de cada atividade.</p></div>
+          <div class="actions"><button id="exportShowerGamesPdfBtn" class="secondary">Exportar roteiro em PDF</button><button id="addShowerGameBtn" class="primary">+ Nova brincadeira</button></div>
+        </div>
+        <div class="toolbar">
+          <input id="showerGameSearch" class="search" placeholder="Pesquisar brincadeira, responsável ou material">
+          <select id="showerGameStatus"><option value="">Todos os status</option><option>Planejada</option><option>Preparada</option><option>Realizada</option><option>Cancelada</option></select>
+        </div>
+        <div id="showerGameSummary" class="summary-strip"></div>
+        <div id="showerGameList" class="game-grid"></div>
+        <article class="card material-panel">
+          <div class="panel-title"><span>Lista geral de materiais</span></div>
+          <div id="showerMaterialList" class="material-list"></div>
+        </article>
+      </section>
+
+      <section id="shower-finance" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Financeiro</h3><p>Despesas do chá separadas dos gastos do casamento.</p></div></div>
+        <div class="toolbar"><input id="showerFinanceSearch" class="search" placeholder="Pesquisar descrição ou categoria"><button id="addShowerFinanceBtn" class="primary">+ Novo lançamento</button></div>
+        <div id="showerFinanceSummary" class="summary-strip"></div>
+        <div class="card table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Previsto</th><th>Pago</th><th>Restante</th><th>Vencimento</th><th>Ações</th></tr></thead><tbody id="showerFinanceRows"></tbody></table></div>
+      </section>
+
+      <section id="shower-schedule" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Cronograma</h3><p>Veja apenas os horários e a sequência do dia.</p></div><button id="addShowerScheduleBtn" class="primary">+ Nova etapa</button></div>
+        <div id="showerScheduleList" class="schedule-list"></div>
+      </section>
+
+      <section id="shower-settings" class="page shower-page">
+        <div class="page-intro"><div><span class="eyebrow">Chá de Cozinha</span><h3>Configurações</h3><p>Edite todos os detalhes do evento em um único lugar.</p></div></div>
+        <div class="card">
+          <div class="settings-grid">
+            <label>Nome do evento<input id="shName"></label>
+
+            <label>Nome curto no menu<input id="shMenuLabel" placeholder="Chá de Cozinha"></label>
+            <label>Ícone do evento<input id="shEventIcon" maxlength="4" placeholder="🎁"></label>
+
+            <label>Data<input id="shDate" type="date"></label>
+            <label>Horário<input id="shTime" type="time"></label>
+            <label>Horário de término<input id="shEndTime" type="time"></label>
+            <label class="full">Local<input id="shLocation"></label>
+            <label class="full">Endereço<input id="shAddress"></label>
+            <label class="full">Link do Google Maps<input id="shMaps"></label>
+            <label>Orçamento previsto<input id="shBudget" type="number" step=".01"></label>
+            <label>Limite de convidados<input id="shGuestLimit" type="number"></label>
+            <label>CPF no cadastro<select id="shCpfRequired"><option value="false">Opcional</option><option value="true">Obrigatório</option></select></label>
+            <label>Exibir CPF na lista<select id="shShowCpf"><option value="true">Sim</option><option value="false">Não, somente na exportação</option></select></label>
+            <label>Permitir acompanhantes<select id="shAllowCompanions"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>Máximo de acompanhantes<input id="shMaxCompanions" type="number" min="0"></label>
+            <label>Mostrar tarefas no painel<select id="shShowTasks"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>Mostrar financeiro no painel<select id="shShowFinance"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>Cor principal<input id="shPrimaryColor" type="color"></label>
+            <label>Cor secundária<input id="shSecondaryColor" type="color"></label>
+            <label class="full">Mensagem de confirmação<textarea id="shConfirmMessage"></textarea></label>
+            <label class="full">Mensagem de recusa<textarea id="shDeclineMessage"></textarea></label>
+            <label class="full">Observações gerais<textarea id="shNotes"></textarea></label>
+          </div>
+          <div class="actions"><button id="saveShowerSettingsBtn" class="primary">Salvar configurações do chá</button></div>
+        </div>
+      </section>
+
+
+      <section id="documents" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Organização</span><h3>Documentos</h3><p>Centralize contratos, comprovantes, orçamentos e links importantes.</p></div><button id="addDocumentBtn" class="primary">+ Novo documento</button></div>
+        <div class="toolbar"><input id="documentSearch" class="search" placeholder="Pesquisar documento ou fornecedor"><select id="documentCategory"><option value="">Todas as categorias</option><option>Contrato</option><option>Comprovante</option><option>Orçamento</option><option>Lista</option><option>Outro</option></select></div>
+        <div id="documentSummary" class="summary-strip"></div><div id="documentGrid" class="document-grid"></div>
+      </section>
+      <section id="reports" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Resumo</span><h3>Relatórios</h3><p>Gere PDFs para conferência e compartilhamento.</p></div></div>
+        <div class="report-grid">
+          <article class="card report-card"><span>👥</span><h4>Convidados</h4><p>Status e mesas.</p><button class="primary" id="reportWeddingGuestsBtn">Gerar PDF</button></article>
+          <article class="card report-card"><span>💰</span><h4>Financeiro</h4><p>Previsto, pago e restante.</p><button class="primary" id="reportFinanceBtn">Gerar PDF</button></article>
+          <article class="card report-card"><span>✓</span><h4>Pendências</h4><p>Tarefas, respostas e mesas.</p><button class="primary" id="reportPendingBtn">Gerar PDF</button></article>
+          <article class="card report-card"><span>🎁</span><h4>Chá de Cozinha</h4><p>Convidados e brincadeiras.</p><button class="primary" id="reportShowerBtn">Gerar PDF</button></article>
+        </div>
+      </section>
+      <section id="ceremony" class="page ceremony-page">
+        <div class="page-intro"><div><span class="eyebrow">Dia do casamento</span><h3>Modo cerimônia</h3><p>Acompanhe o momento atual e a próxima etapa.</p></div><button id="ceremonyFullscreenBtn" class="secondary">Modo de exibição</button></div>
+        <div class="ceremony-clock card"><span id="ceremonyDate"></span><strong id="ceremonyTime">00:00</strong><small id="ceremonyCountdown"></small></div>
+        <div class="ceremony-grid"><article class="card now-card"><span class="eyebrow">Agora</span><h3 id="ceremonyNowTitle">Preparação</h3><p id="ceremonyNowNotes"></p></article><article class="card next-card"><span class="eyebrow">Próximo</span><h3 id="ceremonyNextTitle">Cerimônia</h3><p id="ceremonyNextNotes"></p></article></div>
+        <div class="card"><div class="panel-title"><span>Checklist rápido</span></div><div id="ceremonyChecklist" class="ceremony-checklist"></div></div>
+      </section>
+      <section id="assistant" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Consulta rápida</span><h3>Pergunte ao Nahvio</h3><p>Perguntas simples sobre convidados, mesas, pagamentos e tarefas.</p></div></div>
+        <div class="card assistant-box"><div class="assistant-examples"><button data-assistant-question="Quantos convidados ainda não responderam?">Convidados pendentes</button><button data-assistant-question="Quanto ainda falta pagar?">Valor restante</button><button data-assistant-question="Quais mesas estão vazias?">Mesas vazias</button><button data-assistant-question="Quais tarefas estão atrasadas?">Tarefas atrasadas</button></div><div class="assistant-input-row"><input id="assistantQuestion" placeholder="Digite sua pergunta"><button id="assistantAskBtn" class="primary">Perguntar</button></div><div id="assistantAnswer" class="assistant-answer">Digite uma pergunta ou use um atalho.</div></div>
+      </section>
+      <section id="settings" class="page">
+        <div class="card">
+          <span class="eyebrow">Personalização</span><h3>Configurações gerais</h3>
+          <div class="settings-grid">
+            <label>Título<input id="sAppTitle"></label><label>Nomes do casal<input id="sCoupleNames"></label>
+            <label>Data<input id="sDate" type="date"></label><label>Horário<input id="sTime" type="time"></label>
+            <label class="full">Texto da foto<input id="sSubtitle"></label>
+            <label>Limite de referência<input id="sGuestLimit" type="number" step=".5"></label><label>Capacidade padrão de mesa<input id="sCapacity" type="number"></label>
+            <label>Equivalência de 1 adulto<input id="sAdultWeight" type="number" step=".5"></label><label>Equivalência de criança de 0 a 8<input id="sChild08Weight" type="number" step=".5"></label>
+            <label>Equivalência de criança de 9 a 12<input id="sChild912Weight" type="number" step=".5"></label>
+            <label>Adulto ocupa assento?<select id="sAdultSeat"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>0 a 8 ocupa assento?<select id="sChild08Seat"><option value="true">Sim</option><option value="false">Não</option></select></label>
+            <label>9 a 12 ocupa assento?<select id="sChild912Seat"><option value="true">Sim</option><option value="false">Não</option></select></label>
+          </div>
+          <div class="actions"><button id="saveSettingsBtn" class="primary">Salvar configurações</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modalbox">
+      <div class="modalhead"><h3 id="modalTitle"></h3><button id="closeModal" class="close" aria-label="Fechar">×</button></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

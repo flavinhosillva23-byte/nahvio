@@ -1,0 +1,10 @@
+CHECKLIST PROFISSIONAL - INSTALAÇÃO
+
+1. Abra o painel do Supabase usado pelo site.
+2. Entre em SQL Editor.
+3. Copie e execute todo o arquivo ATUALIZAR_CHECKLIST.sql.
+4. Publique os arquivos atualizados do site.
+5. Entre em Checklist e clique em "Carregar checklist profissional".
+
+Os convidados não são duplicados. Responsáveis e participantes são carregados
+automaticamente da lista de convidados dos lados de Flávio, Nathália e Ambos.

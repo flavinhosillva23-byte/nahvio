@@ -61,6 +61,7 @@
           </div>
         </div>
         <div class="top-actions">
+          <button id="exportCurrentPageBtn" class="secondary">Exportar esta área em PDF</button>
           <button id="refreshBtn" class="secondary">Atualizar</button>
           <button id="logoutBtn" class="secondary">Sair</button>
         </div>
@@ -226,8 +227,12 @@
       </section>
 
       <section id="tasks" class="page">
+        <div class="page-intro"><div><span class="eyebrow">Organização do casamento</span><h3>Checklist profissional</h3><p>Defina responsáveis e participantes usando a lista de convidados.</p></div></div>
         <div class="toolbar">
           <select id="taskFilter"><option value="">Todas as tarefas</option><option value="open">Pendentes</option><option value="done">Concluídas</option><option value="late">Atrasadas</option></select>
+          <select id="taskAreaFilter"><option value="">Todas as áreas</option></select>
+          <select id="taskResponsibleFilter"><option value="">Todos os responsáveis</option><option value="none">Sem responsável</option></select>
+          <button id="seedChecklistBtn" class="secondary">Carregar checklist profissional</button>
           <button id="addTaskBtn" class="primary">+ Nova tarefa</button>
         </div>
         <div id="taskSummaryTop" class="summary-strip"></div>

@@ -371,8 +371,20 @@ body.ceremony-display .sidebar,body.ceremony-display .topbar,body.ceremony-displ
 .paste-status.ok{color:#17603f;background:#e4f5ec}
 .paste-status.warning{color:#76591d;background:#fff3d7}
 .paste-status.duplicate{color:#7b3f3f;background:#f8e7e7}
+.task-area{display:inline-flex;padding:4px 8px;border-radius:999px;background:#edf4f1;color:#24584b;font-size:11px;font-weight:800}
+.task-people{display:grid;gap:4px;margin-top:8px;font-size:12px;color:#5e665f}
+.participant-help{font-size:12px;color:#6e746f;margin:4px 0 9px}
+.participant-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-height:330px;overflow:auto;padding:4px}
+.participant-group{border:1px solid #ddd8ce;border-radius:12px;padding:10px;min-width:0}
+.participant-group legend{padding:0 6px;font-weight:800;color:#24584b}
+.participant-group label{display:flex;align-items:flex-start;gap:7px;padding:6px 2px;font-weight:500}
+.participant-group input{width:auto;margin-top:2px}
+.priority-muito-alta{background:#7c1f2b!important;color:#fff!important}
 @media (max-width:580px){
   .paste-guest-row{grid-template-columns:1fr 1fr}
   .paste-status{justify-self:start}
   .paste-remove{width:100%}
+  .participant-picker{grid-template-columns:1fr}
+  #exportCurrentPageBtn{font-size:0;width:44px;min-width:44px;padding:0}
+  #exportCurrentPageBtn:after{content:"PDF";font-size:11px;font-weight:900}
 }
